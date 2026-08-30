@@ -1,6 +1,6 @@
 # awam-skills
 
-罗列并整理 [awam-skills](https://github.com/awam-skills) 组织下创建的 AI 技能（Skill），按用途分类，便于查找与选用。
+罗列并整理我（Awam M Wang）创建的 AI 技能（Skill），按用途分类，便于查找与选用。
 
 ## 技能目录
 
@@ -21,6 +21,12 @@
 | 技能 | 简介 |
 |------|------|
 | [wiz-migration](https://github.com/awam-skills/wiz-migration) | 为知笔记数据迁移技能；引导导出、附件迁移、HTML 转 Markdown，并自动修复附件路径 |
+
+### GitHub 整理
+
+| 技能 | 简介 |
+|------|------|
+| [github-organize](https://github.com/awam-skills/github-organize) | 审计并整理个人 GitHub 仓库与星标；找出无新提交的 fork、建议归档的自有仓、可取消/归类的星标，支持导出 Excel 并按表执行处理 |
 
 ## 说明
 
