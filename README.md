@@ -2,6 +2,8 @@
 
 罗列并整理我（Awam M Wang）创建的 AI 技能（Skill），按用途分类，便于查找与选用。
 
+> 本目录由 GitHub Actions 定时从 `awam-skills` 组织仓库，以及个人账号（awamwang）带 `skill` Topic 的仓库自动同步。
+
 ## 技能目录
 
 ### 桌面自动化
@@ -32,6 +34,7 @@
 
 - 各技能的安装方式、配置与用法见对应仓库的 README / `SKILL.md`
 - 本仓库仅作技能索引，不包含技能实现代码
+- 分类可在 `skills.overrides.json` 中指定；也可给仓库打上 `cat-*` 类 Topic（见该文件）
 
 ## License
 

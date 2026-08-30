@@ -1,0 +1,45 @@
+{
+  "categories": [
+    {
+      "id": "desktop",
+      "title": "桌面自动化",
+      "topics": ["cat-desktop", "desktop-automation"]
+    },
+    {
+      "id": "ops",
+      "title": "运维部署",
+      "topics": ["cat-ops", "ops", "devops"]
+    },
+    {
+      "id": "migration",
+      "title": "数据迁移",
+      "topics": ["cat-migration", "migration"]
+    },
+    {
+      "id": "github",
+      "title": "GitHub 整理",
+      "topics": ["cat-github", "github"]
+    }
+  ],
+  "overrides": {
+    "awam-skills/quicker-connector": {
+      "category": "desktop",
+      "description": "OpenClaw 技能，连接 Quicker 自动化工具；支持读取动作库、自然语言匹配并执行动作"
+    },
+    "awam-skills/ssh-deploy-skill": {
+      "category": "ops",
+      "description": "通用 SSH 远程部署工具；多服务器管理、批量执行、文件传输，以及 Docker / MySQL / Nginx 等安装模板，并针对国内镜像做了优化"
+    },
+    "awam-skills/wiz-migration": {
+      "category": "migration",
+      "description": "为知笔记数据迁移技能；引导导出、附件迁移、HTML 转 Markdown，并自动修复附件路径"
+    },
+    "awam-skills/github-organize": {
+      "category": "github",
+      "description": "审计并整理个人 GitHub 仓库与星标；找出无新提交的 fork、建议归档的自有仓、可取消/归类的星标，支持导出 Excel 并按表执行处理"
+    }
+  },
+  "exclude": [
+    "awamwang/skills"
+  ]
+}
