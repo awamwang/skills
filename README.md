@@ -30,6 +30,12 @@
 |------|------|
 | [github-organize](https://github.com/awam-skills/github-organize) | 审计并整理个人 GitHub 仓库与星标；找出无新提交的 fork、建议归档的自有仓、可取消/归类的星标，支持导出 Excel 并按表执行处理 |
 
+### 其他
+
+| 技能 | 简介 |
+|------|------|
+| [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
+
 ## 说明
 
 - 各技能的安装方式、配置与用法见对应仓库的 README / `SKILL.md`
