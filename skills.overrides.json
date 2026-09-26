@@ -19,6 +19,11 @@
       "id": "github",
       "title": "GitHub 整理",
       "topics": ["cat-github", "github"]
+    },
+    {
+      "id": "devtools",
+      "title": "开发工具",
+      "topics": ["cat-devtools"]
     }
   ],
   "overrides": {
@@ -37,6 +42,10 @@
     "awam-skills/github-organize": {
       "category": "github",
       "description": "审计并整理个人 GitHub 仓库与星标；找出无新提交的 fork、建议归档的自有仓、可取消/归类的星标，支持导出 Excel 并按表执行处理"
+    },
+    "awam-skills/awam-git-skill": {
+      "category": "devtools",
+      "description": "为仓库安装 Awam Git 提交规范（Conventional Commits + 中文提交信息）；写入 .cursor/rules/git-commit.mdc 与 .cursorrules，供 Agent 与 Source Control ✨ 共用"
     }
   },
   "exclude": [
