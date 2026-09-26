@@ -4,28 +4,36 @@ When Cursor auto-generates a Git commit message for this repository, follow ALL 
 
 ## Hard requirements
 
-1. MUST use Conventional Commits: `<type>(<scope>): <subject>`
+1. MUST use Conventional Commits: `<type>[!][(scope)]: <subject>`（scope optional）
 2. MUST write the subject (and body if any) in Simplified Chinese (简体中文)
 3. NEVER write the commit subject entirely in English
 4. NEVER use vague subjects: `update`, `fix bug`, `wip`, `misc`, `临时提交`
 5. Keep ONE concise subject line (≤72 characters); do NOT end with `。` or `.`
-6. Add a short Chinese body ONLY when needed to explain motivation; no file-list dump
-7. One commit = one concern; subject should explain WHY, not list filenames
-8. Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-9. Preferred scopes for this repo: `skills`, `sync`, `overrides`, `ci`, `doc`（无合适 scope 时可省略）
+6. Subject = WHAT changed (祈使：修复/新增/调整); body = WHY (optional); blank line between subject and body; wrap body ~72 chars; no file-list dump
+7. One commit = one concern; do NOT list filenames in the subject
+8. Allowed types (lowercase): feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+9. Preferred scopes for this repo (lowercase, optional): `skills`, `sync`, `overrides`；文档用 `docs` / `docs(<模块>)`，勿用 `docs(doc)`；CI 用 type `ci`，勿用 `chore(ci)`
 10. Breaking change: use `type(scope)!: …` and/or a footer `BREAKING CHANGE: …` in Chinese
+11. Revert: `revert: <原提交简述>` with body `This reverts commit <hash>.`
+12. Footers when useful: `Refs: #123` / `Closes: #123` / `Fixes: #123`
 
 ## Examples (copy the style, not the English)
 
 - feat(skills): 新增技能分类并补充仓库索引条目
 - fix(sync): 修复定时同步遗漏带 skill Topic 的仓库
 - refactor(overrides): 收敛分类覆盖配置以减少歧义
-- docs(doc): 补充技能索引维护与 overrides 说明
-- chore(ci): 调整同步工作流触发策略
+- docs(sync): 补充同步脚本与 overrides 维护说明
+- ci: 调整同步工作流触发策略
+- chore: 更新本地忽略规则以排除临时产物
+- revert: 修复定时同步遗漏带 skill Topic 的仓库
 
 ## Wrong vs right
 
-- ❌ `Refactor BaseGameRoom for better performance.`
+- ❌ `Refactor skill index for better categorization.`
 - ✅ `refactor(skills): 优化技能索引生成以减少重复分类`
-- ❌ `fix: update login bug`
+- ❌ `fix: update sync bug`
 - ✅ `fix(sync): 修复同步脚本未应用 overrides 的问题`
+- ❌ `chore(ci): update workflow`
+- ✅ `ci: 调整同步工作流触发策略`
+- ❌ `docs(doc): update readme`
+- ✅ `docs: 补充技能索引维护说明`

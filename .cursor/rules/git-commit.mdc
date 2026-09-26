@@ -10,26 +10,37 @@ alwaysApply: true
 ## 格式
 
 ```
-<type>(<scope>): <中文简述>
+<type>[!][(scope)]: <中文简述>
 
 [可选正文]
 
 [可选页脚]
 ```
 
-- `type`：必填，见下表
-- `scope`：可选，说明影响范围（推荐：`skills`、`sync`、`overrides`、`ci`、`doc`）
-- 简述：必填，简体中文，不超过 72 字，不以句号（。/.）结尾
-- 正文：可选，说明动机与关键点，使用中文；可保留必要英文专有名词与代码标识
-- 页脚：可选，如 `BREAKING CHANGE: …`、`Refs: #123`
+- `type`：必填，见下表；必须小写
+- `scope`：可选，说明影响范围（推荐：`skills`、`sync`、`overrides`）；必须小写；文档类用 `docs` 或 `docs(<模块>)`，勿再设与 type 重复的 `doc` scope
+- `!`：可选，标记破坏性变更（也可仅在页脚写 `BREAKING CHANGE`）
+- 简述（subject）：必填，简体中文，不超过 72 字，不以句号（。/.）结尾；写「做了什么」，不写「为什么」
+- 正文（body）：可选，说明动机与背景；与 subject 之间空一行；建议每行不超过 72 字；可保留必要英文专有名词与代码标识
+- 页脚（footer）：可选，如 `BREAKING CHANGE: …`、`Refs: #123`、`Closes: #123`、`Fixes: #123`
 
-破坏性变更可在 type 后加 `!`，或在页脚写明：
+破坏性变更示例：
 
 ```
 feat(skills)!: <中文简述>
 
 BREAKING CHANGE: <不兼容变更说明>
 ```
+
+回滚示例：
+
+```
+revert: <被回滚提交的原简述>
+
+This reverts commit <hash>.
+```
+
+（`revert` 的 subject 复述被回滚那条的简述；正文注明原 commit hash。）
 
 ## type 类型
 
@@ -47,10 +58,13 @@ BREAKING CHANGE: <不兼容变更说明>
 | chore | 杂项（工具、配置等） |
 | revert | 回滚提交 |
 
+选用对应 type：CI 改动用 `ci`，勿写成 `chore(ci)`；文档用 `docs`，勿叠 `docs(doc)`。
+
 ## 简述要求
 
 - 必须使用简体中文；**禁止**纯英文 subject（错误：`fix: update login bug`）
-- 聚焦「为什么 / 影响」，不要堆砌文件名或 diff 罗列
+- 祈使语气：用「修复 / 新增 / 调整 / 优化」，避免「已修复 / 完成了 / 临时改一下」
+- subject 描述变更本身（做什么），动机放正文；不要堆砌文件名或 diff 罗列
 - **禁止**含糊简述：`update`、`fix bug`、`临时提交`、`wip`、`misc`
 - 一条提交只做一类变更；勿把无关改动塞进同一 commit
 - 可保留专有名词：`Colyseus`、`HeroUI`、`OAuth`、API 路径等
@@ -64,9 +78,13 @@ fix(sync): 修复定时同步遗漏带 skill Topic 的仓库
 
 refactor(overrides): 收敛分类覆盖配置以减少歧义
 
-docs(doc): 补充技能索引维护与 overrides 说明
+docs(sync): 补充同步脚本与 overrides 维护说明
 
-chore(ci): 调整同步工作流触发策略
+ci: 调整同步工作流触发策略
+
+chore: 更新本地忽略规则以排除临时产物
+
+revert: 修复定时同步遗漏带 skill Topic 的仓库
 ```
 
 ## Cursor / Agent 约束
