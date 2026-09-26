@@ -1,0 +1,77 @@
+---
+name: awam-skills
+description: >-
+  按 Awam 个人约定创建或发布 AI 技能仓：初始化 awam-skills 组织下的技能仓库脚手架，
+  以及发布到 GitHub 后更新 Topics、description 与索引仓 overrides。在用户提到创建技能、
+  初始化技能仓、发布技能、收录到 awam-skills 索引，或显式调用 /awam-skills 时使用。
+  不处理通用 Skill 质量优化或 ClawHub 市场包装。
+disable-model-invocation: true
+---
+
+# awam-skills（创建 / 发布）
+
+Awam 个人技能仓的**创建**与**发布**流程。领域词见仓库根目录 [CONTEXT.md](../../CONTEXT.md)。
+
+## 何时用
+
+| 用户意图 | 走哪条 |
+|----------|--------|
+| 新建 / 初始化技能仓 | [创建](references/create.md) |
+| 推到 GitHub 并进索引 | [发布](references/publish.md) |
+| 改 skill 结构、写更好的 prompt、ClawHub | **拒绝**（Non-goals） |
+
+## Non-goals
+
+- 通用 Skill 质量/结构优化（progressive disclosure、跨 harness、skill-creator-advanced 等）
+- ClawHub / OpenClaw 市场包装与发布清单
+- 对他人技能仓做 review / 重构建议
+- 仅为「公共能力」改同步脚本（个人发布踩坑时才允许最小改动）
+
+## 常量
+
+| 项 | 值 |
+|----|-----|
+| 组织 | `awam-skills` |
+| 索引仓（本仓） | 含 `skills.overrides.json` 与本 Skill 的 git 根 |
+| Topics（必打） | `skill`、`skills` |
+| 分类 Topics（可选） | `skills.overrides.json` 里各类的 `topics`（如 `cat-ops`） |
+| README 写入方 | **仅** GitHub Actions「Sync Skills Catalog」——发布时**禁止**本地跑 `scripts/sync_skills.py` |
+
+## 仓库命名
+
+```
+repo_name = name if name.endswith("-skill") else f"{name}-skill"
+```
+
+全小写 kebab-case。既有仓不改名。
+
+## 布局选择（创建）
+
+- **默认扁平**：根目录 `SKILL.md`
+- **嵌套**：仅当用户明确需要根目录 CLI、一仓多技能、或 `CONTEXT.md` 时 → `skills/<name>/SKILL.md`
+
+## 总流程
+
+1. 判定意图：创建 / 发布 / 二者连续（先创建再实现，发布另开或用户明确要求时再发）。
+2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
+3. 按对应 reference 逐步执行；缺分类等决策时**问用户**，不替用户拍板索引语义。
+4. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
+
+## 本机发现（可选）
+
+本 Skill 只活在索引仓，不单独发组织仓。若要在其它工作区调用，把本目录链到 Agent skills 路径，例如：
+
+```powershell
+New-Item -ItemType Junction -Force -Path "$env:USERPROFILE\.agents\skills\awam-skills" -Target "<本仓绝对路径>\skills\awam-skills"
+```
+
+## 快速对照
+
+| 步骤 | 创建 | 发布 |
+|------|------|------|
+| 本地脚手架 | ✅ | — |
+| `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — |
+| push 技能仓内容 | ❌ | ✅ 仅当远程无提交 |
+| Topics / description | ❌（可留到发布） | ✅ |
+| 改 `skills.overrides.json` | ❌ | ✅ |
+| 本地 `sync_skills.py` | ❌ | ❌（交给 Actions） |
