@@ -32,10 +32,17 @@
 |------|------|
 | [github-organize](https://github.com/awam-skills/github-organize) | 审计并整理个人 GitHub 仓库与星标；找出无新提交的 fork、建议归档的自有仓、可取消/归类的星标，支持导出 Excel 并按表执行处理 |
 
+### 开发工具
+
+| 技能 | 简介 |
+|------|------|
+| [awam-git-skill](https://github.com/awam-skills/awam-git-skill) | 为仓库安装 Awam Git 提交规范（Conventional Commits + 中文提交信息）；写入 .cursor/rules/git-commit.mdc 与 .cursorrules，供 Agent 与 Source Control ✨ 共用 |
+
 ### 其他
 
 | 技能 | 简介 |
 |------|------|
+| [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | 在 Windows 上申请、安装与续期 Let's Encrypt TLS 证书 |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
 
 ## 说明
