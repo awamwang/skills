@@ -1,0 +1,31 @@
+# Git 提交信息（Source Control 自动生成）
+
+When Cursor auto-generates a Git commit message for this repository, follow ALL rules below.
+
+## Hard requirements
+
+1. MUST use Conventional Commits: `<type>(<scope>): <subject>`
+2. MUST write the subject (and body if any) in Simplified Chinese (简体中文)
+3. NEVER write the commit subject entirely in English
+4. NEVER use vague subjects: `update`, `fix bug`, `wip`, `misc`, `临时提交`
+5. Keep ONE concise subject line (≤72 characters); do NOT end with `。` or `.`
+6. Add a short Chinese body ONLY when needed to explain motivation; no file-list dump
+7. One commit = one concern; subject should explain WHY, not list filenames
+8. Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+9. Preferred scopes for this repo: `skills`, `sync`, `overrides`, `ci`, `doc`（无合适 scope 时可省略）
+10. Breaking change: use `type(scope)!: …` and/or a footer `BREAKING CHANGE: …` in Chinese
+
+## Examples (copy the style, not the English)
+
+- feat(skills): 新增技能分类并补充仓库索引条目
+- fix(sync): 修复定时同步遗漏带 skill Topic 的仓库
+- refactor(overrides): 收敛分类覆盖配置以减少歧义
+- docs(doc): 补充技能索引维护与 overrides 说明
+- chore(ci): 调整同步工作流触发策略
+
+## Wrong vs right
+
+- ❌ `Refactor BaseGameRoom for better performance.`
+- ✅ `refactor(skills): 优化技能索引生成以减少重复分类`
+- ❌ `fix: update login bug`
+- ✅ `fix(sync): 修复同步脚本未应用 overrides 的问题`
