@@ -1,16 +1,17 @@
 ---
 name: awam-skills
 description: >-
-  按 Awam 个人约定创建或发布 AI 技能仓：初始化 awam-skills 组织下的技能仓库脚手架，
-  以及发布到 GitHub 后更新 Topics、description 与索引仓 overrides。在用户提到创建技能、
-  初始化技能仓、发布技能、收录到 awam-skills 索引，或显式调用 /awam-skills 时使用。
-  不处理通用 Skill 质量优化或 ClawHub 市场包装。
+  按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
+  发布到 GitHub 后更新 Topics、description 与索引仓 overrides，以及用脚本对比组织仓 /
+  索引仓远程 / 本机 ~/.agents/skills/awam 的技能列表与存在性。在用户提到创建技能、
+  初始化技能仓、发布技能、收录到 awam-skills 索引、查询技能列表、对比本机与线上技能，
+  或显式调用 /awam-skills 时使用。不处理通用 Skill 质量优化或 ClawHub 市场包装。
 disable-model-invocation: true
 ---
 
-# awam-skills（创建 / 发布）
+# awam-skills（创建 / 发布 / 查询）
 
-Awam 个人技能仓的**创建**与**发布**流程。领域词见仓库根目录 [CONTEXT.md](../../CONTEXT.md)。
+Awam 个人技能仓的**创建**、**发布**与**查询**流程。领域词见仓库根目录 [CONTEXT.md](../../CONTEXT.md)。
 
 ## 何时用
 
@@ -18,6 +19,7 @@ Awam 个人技能仓的**创建**与**发布**流程。领域词见仓库根目�
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
+| 列组织 / 索引远程 / 本机 awam 技能并对比 | [查询](references/query.md) |
 | 改 skill 结构、写更好的 prompt、ClawHub | **拒绝**（Non-goals） |
 
 ## Non-goals
@@ -52,10 +54,11 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 
 ## 总流程
 
-1. 判定意图：创建 / 发布 / 二者连续（先创建再实现，发布另开或用户明确要求时再发）。
+1. 判定意图：创建 / 发布 / 查询 / 创建后发布（先创建再实现，发布另开或用户明确要求时再发）。
 2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
 3. 按对应 reference 逐步执行；缺分类等决策时**问用户**，不替用户拍板索引语义。
-4. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
+4. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
+5. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
 
 ## 本机发现（可选）
 
@@ -67,11 +70,12 @@ New-Item -ItemType Junction -Force -Path "$env:USERPROFILE\.agents\skills\awam-s
 
 ## 快速对照
 
-| 步骤 | 创建 | 发布 |
-|------|------|------|
-| 本地脚手架 | ✅ | — |
-| `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — |
-| push 技能仓内容 | ❌ | ✅ 仅当远程无提交 |
-| Topics / description | ❌（可留到发布） | ✅ |
-| 改 `skills.overrides.json` | ❌ | ✅ |
-| 本地 `sync_skills.py` | ❌ | ❌（交给 Actions） |
+| 步骤 | 创建 | 发布 | 查询 |
+|------|------|------|------|
+| 本地脚手架 | ✅ | — | — |
+| `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — | — |
+| push 技能仓内容 | ❌ | ✅ 仅当远程无提交 | — |
+| Topics / description | ❌（可留到发布） | ✅ | — |
+| 改 `skills.overrides.json` | ❌ | ✅ | ❌ |
+| 本地 `sync_skills.py` | ❌ | ❌（交给 Actions） | ❌ |
+| 跑 `query_skills.py` | — | — | ✅ 必跑 |

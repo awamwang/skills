@@ -24,6 +24,12 @@ _Avoid_: 脚手架、init、scaffold（口语可说，文档与 Skill 正文用�
 
 _Avoid_: 上架、publish to marketplace
 
+## 查询
+
+用 `skills/awam-skills/scripts/query_skills.py` **只读**列出并对比三处技能：组织 `awam-skills` 仓库、索引仓远程 README（及仓内流程 Skill）、本机 `~/.agents/skills/awam/`。由脚本出表，不靠 AI 逐步手查。
+
+_Avoid_: 同步（会写 README）；发布
+
 ## 同步
 
 用 `scripts/sync_skills.py` 或 GitHub Actions「Sync Skills Catalog」根据组织仓、topic 与 overrides 重写索引仓 `README.md`。发布流程**不**在本地跑同步，避免与 Actions 争写。
@@ -41,9 +47,13 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 - **扁平布局**：根目录 `SKILL.md`（如 `github-organize`）——**默认**
 - **嵌套布局**：`skills/<name>/SKILL.md`，根目录可放 CLI / 测试 / 领域文档（如 `windows-autostart-skill`）——仅当有根目录 CLI、多技能或需要 CONTEXT 时选用
 
-## 创建/发布 Skill
+## 创建/发布/查询 Skill
 
-本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建与发布流程，不负责通用 Skill 优化。
+本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布与三方查询对比，不负责通用 Skill 优化。
+
+## 本机 awam 目录
+
+`~/.agents/skills/awam/`（Windows: `%USERPROFILE%\.agents\skills\awam\`）：本机按「awam」命名空间放置的技能子目录，查询流程与组织仓、索引仓对照用。与 skills 根目录下其它第三方技能无关。
 
 ## 仓库命名
 
