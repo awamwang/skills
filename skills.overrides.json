@@ -24,6 +24,41 @@
       "id": "devtools",
       "title": "开发工具",
       "topics": ["cat-devtools"]
+    },
+    {
+      "id": "backup",
+      "title": "备份恢复",
+      "topics": ["cat-backup", "backup"]
+    },
+    {
+      "id": "security",
+      "title": "安全隐私",
+      "topics": ["cat-security", "security"]
+    },
+    {
+      "id": "network",
+      "title": "网络代理",
+      "topics": ["cat-network", "network"]
+    },
+    {
+      "id": "system",
+      "title": "系统维护",
+      "topics": ["cat-system", "system"]
+    },
+    {
+      "id": "media",
+      "title": "影音图像",
+      "topics": ["cat-media", "media"]
+    },
+    {
+      "id": "office",
+      "title": "办公文档",
+      "topics": ["cat-office", "office"]
+    },
+    {
+      "id": "ai",
+      "title": "AI 助手",
+      "topics": ["cat-ai", "ai"]
     }
   ],
   "overrides": {
@@ -46,6 +81,10 @@
     "awam-skills/awam-git-skill": {
       "category": "devtools",
       "description": "为仓库安装 Awam Git 提交规范（Conventional Commits + 中文提交信息）；写入 .cursor/rules/git-commit.mdc 与 .cursorrules，供 Agent 与 Source Control ✨ 共用"
+    },
+    "awam-skills/awam-windows-backup-skill": {
+      "category": "backup",
+      "description": "Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出）"
     }
   },
   "exclude": [
