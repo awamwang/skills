@@ -38,6 +38,12 @@
 |------|------|
 | [awam-git-skill](https://github.com/awam-skills/awam-git-skill) | 为仓库安装 Awam Git 提交规范（Conventional Commits + 中文提交信息）；写入 .cursor/rules/git-commit.mdc 与 .cursorrules，供 Agent 与 Source Control ✨ 共用 |
 
+### 备份恢复
+
+| 技能 | 简介 |
+|------|------|
+| [awam-windows-backup-skill](https://github.com/awam-skills/awam-windows-backup-skill) | Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出） |
+
 ### 其他
 
 | 技能 | 简介 |
