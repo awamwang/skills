@@ -48,7 +48,7 @@
 
 | 技能 | 简介 |
 |------|------|
-| [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | 在 Windows 上申请、安装与续期 Let's Encrypt TLS 证书 |
+| [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | Issue, renew, and maintain Let's Encrypt TLS certificates on Windows via ACME. Routes among win-acme, Posh-ACME, and Certify The Web; covers HTTP-01/DNS-01,… |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
 
 ## 说明
