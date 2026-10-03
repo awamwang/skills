@@ -62,11 +62,21 @@ gh repo edit "awam-skills/<repo_name>" --add-topic skill --add-topic skills --de
 - 若迟迟未跑：在索引仓 `gh workflow run "Sync Skills Catalog"`，仍不要本地写 README。
 - 若发现本地与线上同时有人改 README：停手，以 Actions 结果为准，必要时 `git pull --rebase`。
 
+### 5. 更新发布规划
+
+在索引仓 `docs/publishing-plan.json` 把该技能 `status.github` 置 `done`，运行：
+
+```bash
+python skills/awam-skills/scripts/plan_skills.py
+```
+
+刷新 `docs/publishing-plan.md`。如需继续发布到第三方平台（LobeHub / 魔搭 / 豆包 / ClawHub / AgentPowers），走 [platforms.md](platforms.md)，完成后逐平台把 `status` 置 `done` 并再次刷新。
+
 ## 禁止
 
 - 本地执行 `python scripts/sync_skills.py` 作为发布步骤
 - 为「看起来更快」同时本地同步又 push overrides
-- 写入 ClawHub / 市场清单
+- 在平台之外另造市场 / 清单文件（`skill.json`、ClawHub 包等）；第三方平台发布统一走 `platforms.md`
 - 把本索引仓的 `skills/awam-skills` 再发布成组织下另一个技能仓
 
 ## 校验
@@ -76,3 +86,4 @@ gh repo edit "awam-skills/<repo_name>" --add-topic skill --add-topic skills --de
 - [ ] `skills.overrides.json` 已有对应条目与正确 `category`
 - [ ] 未本地改写 `README.md`（除非用户单独要求且理解会被 Actions 覆盖）
 - [ ] Actions 同步成功或已手动 `workflow_dispatch`
+- [ ] `docs/publishing-plan.json` 的 `status.github` 已置 `done`；视图已刷新

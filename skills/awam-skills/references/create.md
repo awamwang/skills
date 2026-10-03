@@ -28,7 +28,14 @@
    ```
 
    若仓已存在：只补 remote（或核对 URL），不要删远程内容。
-5. **停在这里**：不要 `git push`。告知用户：实现技能内容后，用本 Skill 的**发布**流程收尾。
+5. **停在这里**：不要 `git push` 技能仓。告知用户：实现技能内容后，用本 Skill 的**发布**流程收尾。
+6. **登记发布规划**（索引仓操作）：在 `docs/publishing-plan.json` 的 `skills` 增加新技能条目——给 `tier`、`repo`、`summary`；按类别与用户确认给默认 `plan`（参考 [platforms.md](platforms.md) 的平台清单）；`status` 各平台置 `not_started`（含 GitHub，尚未发布）。随后跑：
+
+   ```bash
+   python skills/awam-skills/scripts/plan_skills.py
+   ```
+
+   刷新 `docs/publishing-plan.md`。平台目标不确定时**问用户**。
 
 ## 校验
 
@@ -36,6 +43,7 @@
 - [ ] `.gitignore`、awam-git 两套提交规范已落盘
 - [ ] `origin` 指向 `awam-skills/<repo_name>`
 - [ ] 未 push；未改索引仓 `skills.overrides.json`
+- [ ] `docs/publishing-plan.json` 已登记新技能（`status` 均 `not_started`）；`publishing-plan.md` 已刷新
 - [ ] 未创建 ClawHub / `skill.json` 等市场文件
 
 ## 模板注意
@@ -43,3 +51,9 @@
 - frontmatter 含 `name`、`description`；默认加 `disable-model-invocation: true`（仅用户点名时加载）。若用户要求可被模型自动调用，再去掉该字段。
 - description 用第三人称、含 WHAT + WHEN；可中文。
 - 正文只写该技能自己的步骤；不要塞通用「如何写好 Skill」教程。
+
+## 发布规划注意
+
+- **新建技能必须配套登记** `docs/publishing-plan.json`（本「创建」流程第 6 步即是）。
+- 默认按技能类别给梯队与平台建议，但**平台目标由用户确认**；不确定时问用户，不替用户拍板。
+- 创建阶段 `status` 一律 `not_started`（GitHub 未发布）；**发布到 GitHub 后才把 `github` 置 `done`**，发布到各平台后分别更新。

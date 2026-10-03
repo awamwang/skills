@@ -65,9 +65,21 @@ _Avoid_: 与 skill `name` 裸名一律等同（旧习惯）；`foo-skill-skill` 
 
 索引仓 `README.md` 的权威写入方是 **GitHub Actions「Sync Skills Catalog」**。发布流程只更新 `skills.overrides.json`（及远程 Topics/description），**本地不跑** `sync_skills.py`，以免与线上同步争写。
 
+## 发布规划
+
+`docs/publishing-plan.json`：按「技能 × 平台」记录每个技能的发布规划（`plan`）与实际情况（`status`）的权威数据；人读视图 `docs/publishing-plan.md` 由 `scripts/plan_skills.py` 生成。**新建技能必须配套登记发布规划**；每完成一个平台发布即更新对应 `status` 并刷新视图。
+
+_Avoid_: 手改 `publishing-plan.md` 视图（由脚本生成）；漏登记新技能
+
+## 平台发布
+
+把 `awam-skills` 组织下已公开的技能发布到第三方技能平台（LobeHub、魔搭 ModelScope、豆包技能中心、ClawHub、AgentPowers）。流程见 `references/platforms.md`；发布后同步 `publishing-plan.json`。不含替用户注册、登录或付费。
+
+_Avoid_: 在平台之外另造市场 / 清单文件作为发布依据
+
 ## Non-goals（本 Skill 明确不做）
 
 - 通用 Skill 质量/结构优化（progressive disclosure、跨 harness、skill-creator-advanced 等）
-- ClawHub / OpenClaw 市场包装与发布清单
 - 对他人技能仓做 review / 重构建议
 - 仅为「公共能力」去改同步脚本；仅当个人发布/收录流程会踩坑时才允许最小改动
+- 第三方平台的账号注册、登录、付费开通（需要用户完成）
