@@ -44,6 +44,12 @@
 |------|------|
 | [awam-windows-backup-skill](https://github.com/awam-skills/awam-windows-backup-skill) | Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出） |
 
+### 影音图像
+
+| 技能 | 简介 |
+|------|------|
+| [ximalaya-downloader-skill](https://github.com/awam-skills/ximalaya-downloader-skill) | 下载喜马拉雅免费专辑音频到本地。用自带 Python 脚本走公开接口，支持整专辑或区间下载为 m4a、默认生成 Markdown 清单、可选 ffmpeg 转 mp3；付费/VIP 集只跳过不绕过。 |
+
 ### 其他
 
 | 技能 | 简介 |
