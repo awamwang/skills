@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-03",
+  "platforms": {
+    "github": {
+      "name": "GitHub（基础层）",
+      "region": "—",
+      "channel": "组织仓 + 索引",
+      "priority": "基础",
+      "note": "现有分发与索引基础；第三方平台发布以已公开的 GitHub 仓为前提"
+    },
+    "lobehub": {
+      "name": "LobeHub",
+      "region": "国际",
+      "channel": "SKILL.md bundle / CLI",
+      "priority": "主推",
+      "note": "330k+ 技能、跨 Claude/Cursor 等，官方 CLI @lobehub/market-cli，分发量最大"
+    },
+    "modelscope": {
+      "name": "魔搭 ModelScope",
+      "region": "国内",
+      "channel": "Skills Central / modelscope-skill-upload",
+      "priority": "主推",
+      "note": "中文开源生态最大，有现成上传 Skill 走 OpenAPI（zip→file_id→创建）"
+    },
+    "doubao": {
+      "name": "豆包技能中心",
+      "region": "国内",
+      "channel": "技能中心导入",
+      "priority": "主推",
+      "note": "豆包电脑版侧边栏技能入口，可挂自定义技能，成本最低"
+    },
+    "clawhub": {
+      "name": "ClawHub",
+      "region": "国际",
+      "channel": "clawhub CLI",
+      "priority": "定向",
+      "note": "OpenClaw 官方 registry；quicker-connector 绑定此生态；社区含少量恶意样本需留意来源"
+    },
+    "agentpowers": {
+      "name": "AgentPowers",
+      "region": "国际",
+      "channel": "MCP 提交",
+      "priority": "可选",
+      "note": "基于 MCP 标准、12+ 平台、8 层安全扫描，偏付费/高品质市场"
+    }
+  },
+  "tiers": {
+    "t1": { "label": "最值得", "action": "首选全平台铺开", "color": "green" },
+    "t2": { "label": "实用", "action": "适配运维 / Windows 向平台", "color": "amber" },
+    "t3": { "label": "需改造", "action": "泛化改造后再发，否则留个人仓", "color": "gray" }
+  },
+  "status_labels": {
+    "done": "已发布",
+    "not_started": "未发布",
+    "todo": "需处理 / 微调",
+    "blocked": "受阻",
+    "skip": "不建议"
+  },
+  "plan_labels": {
+    "publish": "推荐发布",
+    "optional": "可选 / 需微调",
+    "skip": "不建议"
+  },
+  "skills": {
+    "ssh-deploy-skill": {
+      "tier": "t1",
+      "repo": "awam-skills/ssh-deploy-skill",
+      "summary": "通用 SSH 部署 / 多服务器 / 批量 / 文件传输 / Docker·MySQL·Nginx 模板 / 国内镜像优化",
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "notes": "运维刚需、跨平台通用，最优先铺开"
+    },
+    "awam-git-skill": {
+      "tier": "t1",
+      "repo": "awam-skills/awam-git-skill",
+      "summary": "Git 提交规范（Conventional Commits + 中文提交信息）",
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "optional" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo" },
+      "notes": "纯通用开发习惯，任何 agent 直接可用"
+    },
+    "github-organize": {
+      "tier": "t1",
+      "repo": "awam-skills/github-organize",
+      "summary": "GitHub 仓库 / 星标整理（找 fork、归档案、可取消/归类星标）",
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "optional", "clawhub": "optional", "agentpowers": "optional" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "todo", "clawhub": "todo", "agentpowers": "todo" },
+      "notes": "开发者高频需求，通用性强"
+    },
+    "windows-autostart-skill": {
+      "tier": "t2",
+      "repo": "awam-skills/windows-autostart-skill",
+      "summary": "Windows 自启动管理（自带 windows-autostart.ps1 CLI，JSON 输出）",
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "notes": "有 CLI、生态契合，适合运维 / Windows 向平台"
+    },
+    "letsencrypt-windows-skill": {
+      "tier": "t2",
+      "repo": "awam-skills/letsencrypt-windows-skill",
+      "summary": "Windows TLS 证书（win-acme / Posh-ACME / Certify The Web 三选路由，HTTP-01/DNS-01）",
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "notes": "同类稀缺、差异化价值高"
+    },
+    "quicker-connector": {
+      "tier": "t2",
+      "repo": "awam-skills/quicker-connector",
+      "summary": "OpenClaw 技能，连接 Quicker 自动化工具（读取动作库、自然语言匹配并执行动作）",
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "publish", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "not_started", "agentpowers": "skip" },
+      "notes": "明确绑定 OpenClaw 生态 → ClawHub 首选；可选 ClawMart 付费变现"
+    },
+    "awam-windows-backup-skill": {
+      "tier": "t3",
+      "repo": "awam-skills/awam-windows-backup-skill",
+      "summary": "Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出）",
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "optional", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "todo", "agentpowers": "skip" },
+      "notes": "绑定个人目录/配置，需把路径、仓库配置参数化泛化后再发"
+    },
+    "wiz-migration": {
+      "tier": "t3",
+      "repo": "awam-skills/wiz-migration",
+      "summary": "为知笔记数据迁移（导出、附件迁移、HTML 转 Markdown，自动修复附件路径）",
+      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
+      "notes": "产品已停运、受众极小；除非转为通用笔记迁移再发"
+    }
+  }
+}
