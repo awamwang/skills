@@ -8,7 +8,7 @@
 
 - 技能仓已在 GitHub `awam-skills` 公开且含 `SKILL.md`（嵌套则 `skills/<name>/SKILL.md`）。
 - 文件统一 **UTF-8（无 BOM）**；`SKILL.md` 建议 **LF 行尾**（Windows 复制常残留 CRLF，会触发魔搭解析错误，见下方踩坑）。
-- `SKILL.md` frontmatter 齐备：`name` / `description`；发魔搭 / LobeHub 时建议加 `version`（值可取自技能 `_meta.json`）。
+- `SKILL.md` frontmatter 齐备：`name` / `version`（创建模板默认 `0.0.1`）/ `description`；发魔搭 / LobeHub 前按 semver 提升 `version`（初始值可取自技能 `_meta.json`）。
 - 用户已在该平台注册 / 登录 / 开通（涉及付费需用户确认）。
 
 ## 平台清单

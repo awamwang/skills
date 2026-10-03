@@ -48,7 +48,7 @@
 
 ## 模板注意
 
-- frontmatter 含 `name`、`description`；默认加 `disable-model-invocation: true`（仅用户点名时加载）。若用户要求可被模型自动调用，再去掉该字段。
+- frontmatter 含 `name`、`version`（创建默认 `0.0.1`）、`description`；默认加 `disable-model-invocation: true`（仅用户点名时加载）。若用户要求可被模型自动调用，再去掉该字段。发布到第三方平台（魔搭 / LobeHub）前按 semver 提升 `version`。
 - description 用第三人称、含 WHAT + WHEN；可中文。
 - 正文只写该技能自己的步骤；不要塞通用「如何写好 Skill」教程。
 
