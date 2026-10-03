@@ -25,7 +25,7 @@
 
 | 技能 | 梯队 | GitHub（基础层） | LobeHub | 魔搭 ModelScope | 豆包技能中心 | ClawHub | AgentPowers |
 |------|:----:|:---:|:---:|:---:|:---:|:---:|:---:|
-| `ssh-deploy-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ○ |
+| `ssh-deploy-skill` | 最值得 | ✅ | ✅ | ✅ | ✅ | ◐ | — |
 | `awam-git-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ◐ |
 | `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ |
 | `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
@@ -45,11 +45,11 @@
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
 | GitHub（基础层） | 推荐发布 | ✅ 已发布 |
-| LobeHub | 推荐发布 | ○ 未发布 |
-| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
-| 豆包技能中心 | 推荐发布 | ○ 未发布 |
+| LobeHub | 推荐发布 | ✅ 已发布 |
+| 魔搭 ModelScope | 推荐发布 | ✅ 已发布 |
+| 豆包技能中心 | 推荐发布 | ✅ 已发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
-| AgentPowers | 推荐发布 | ○ 未发布 |
+| AgentPowers | 推荐发布 | — 不建议 |
 
 ### awam-git-skill · 最值得
 

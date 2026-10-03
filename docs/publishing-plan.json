@@ -68,7 +68,7 @@
       "repo": "awam-skills/ssh-deploy-skill",
       "summary": "通用 SSH 部署 / 多服务器 / 批量 / 文件传输 / Docker·MySQL·Nginx 模板 / 国内镜像优化",
       "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "status": { "github": "done", "lobehub": "done", "modelscope": "done", "doubao": "done", "clawhub": "todo", "agentpowers": "skip" },
       "notes": "运维刚需、跨平台通用，最优先铺开"
     },
     "awam-git-skill": {
