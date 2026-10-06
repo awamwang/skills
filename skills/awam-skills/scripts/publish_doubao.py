@@ -32,8 +32,11 @@ INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 
-EXCLUDE_DIRS = {".git", ".cache", ".workbuddy", "__pycache__", "node_modules", ".venv", "venv"}
 TEXT_EXT = {".md", ".py", ".json", ".txt", ".yml", ".yaml", ".cfg", ".toml", ".sh"}
+
+# 默认输出到仓库**外**：写进技能仓会被 `git status` 看见，容易误提交进公开仓库
+# （技能仓里那个 zip 正是 `public_files` 认定的私密数据集合的反面教材）。
+DEFAULT_OUT_DIR = Path.home() / ".awam-publish"
 
 
 def log(msg: str) -> None:
@@ -41,32 +44,35 @@ def log(msg: str) -> None:
 
 
 def read_frontmatter_name(skill_dir: Path) -> str:
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.exists():
-        nested = skill_dir / "skills" / skill_dir.name / "SKILL.md"
-        skill_md = nested if nested.exists() else skill_md
-    if not skill_md.exists():
+    root, _note = public_files.find_skill_root(skill_dir)
+    if root is None:
         return skill_dir.name
-    m = re.search(r"^name:\s*(.+)$", skill_md.read_text(encoding="utf-8", errors="replace"), re.MULTILINE)
+    text = (root / "SKILL.md").read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"^name:\s*(.+)$", text, re.MULTILINE)
     return m.group(1).strip() if m else skill_dir.name
 
 
 def build_zip(skill_dir: Path, zip_path: Path, top: str) -> tuple[int, int]:
     """打包。只打 `public_files` 判定的公开文件——导入包会被上传到平台，属公开物，
-    绝不能把 storage/、env.json、index.json 这类本地私密数据带进去。"""
-    files, source, excluded = public_files.public_files(skill_dir)
+    绝不能把 storage/、env.json、index.json 这类本地私密数据带进去。
+    路径按**打包根**（SKILL.md 所在目录）取，嵌套布局也能得到「顶层文件夹下就是 SKILL.md」。"""
+    files, root, source, excluded, outside = public_files.pack_files(skill_dir)
     log(f"  {public_files.describe(skill_dir)}")
     for rel in excluded:
         log(f"    ⤫ 排除 {rel}")
+    if root is None:
+        raise SystemExit(f"无法确定打包根：{source}")
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in files:
-            rel = p.relative_to(skill_dir).as_posix()
+            rel = public_files.pack_rel(p, root)
             data = p.read_bytes()
             if p.suffix.lower() in TEXT_EXT:
                 data = data.replace(b"\r\n", b"\n")
             z.writestr(f"{top}/{rel}", data)
             n += 1
+    if not any(public_files.pack_rel(p, root) == "SKILL.md" for p in files):
+        raise SystemExit("导入包顶层缺 SKILL.md，豆包会导入失败")
     return n, zip_path.stat().st_size
 
 
@@ -86,7 +92,7 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description="为豆包技能中心准备导入包")
     parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
-    parser.add_argument("--out", help="输出 zip 路径，默认 <技能仓>/<name>-doubao.zip")
+    parser.add_argument("--out", help=f"输出 zip 路径，默认 {DEFAULT_OUT_DIR}\\<name>-doubao.zip（仓外）")
     parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按名字反查）")
     parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
     parser.add_argument("--mark-done", action="store_true", help="确认已导入成功后，更新规划并刷新视图")
@@ -97,7 +103,7 @@ def main() -> int:
         raise SystemExit(f"技能目录不存在：{skill_dir}")
 
     name = read_frontmatter_name(skill_dir)
-    out = Path(args.out).expanduser().resolve() if args.out else skill_dir / f"{name}-doubao.zip"
+    out = Path(args.out).expanduser().resolve() if args.out else DEFAULT_OUT_DIR / f"{name}-doubao.zip"
     out.parent.mkdir(parents=True, exist_ok=True)
 
     count, size = build_zip(skill_dir, out, name)

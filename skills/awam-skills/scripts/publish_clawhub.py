@@ -5,7 +5,11 @@
 - CLI 必须是无作用域 npm 包 `clawhub`，**不是** `@clawhub/cli`（后者只是 0.0.2 占位包）
 - 必须带 `--no-input`：否则遇到「已存在同 slug，是否更新」的交互确认会静默挂死（无输出、只能靠超时杀掉）
 - 本机 `HTTPS_PROXY` 会对 registry 的 HTTPS 隧道返回 502，发布子进程里剥离 `*_PROXY` 并置 `NO_PROXY='*'`
-- 发布目录用 `git archive` 导出干净副本，避免 `.cache/`、`.workbuddy/` 被打包进去
+- 发布目录：优先 `git archive` 导出跟踪文件；非 git 仓回退到 public_files 的公开文件集
+  （不能用排除表 —— 会漏掉 storage/、env.json、index.json）。返回的是**打包根**
+  （SKILL.md 所在目录），嵌套布局的仓库才不会把仓库根交给平台
+- 临时目录在 finally 里清理，`--keep-tmp` 可保留
+- 发布前建议先跑 preflight.py（git 状态 / 与远程同步 / frontmatter / 打包根）
 - dry-run 免登录；正式发布需先 `clawhub login --device`（设备流要人工在浏览器确认）
 
 用法（索引仓根任意路径均可，脚本自定位）：
@@ -28,14 +32,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import public_files  # noqa: E402  （公开文件集判定：见 public_files.py）
 
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 
-# 会被打进发布包的无关产物
-EXCLUDE_DIRS = {".git", ".cache", ".workbuddy", "__pycache__", "node_modules", ".venv", "venv"}
+# 发布目录一律由 public_files.py 判定（git archive 或公开文件集）；
+# 不再维护「排除表」—— 本地那份 EXCLUDE_DIRS 只跳过工程目录，漏掉 storage/ env.json，
+# 正是它把本机数据放进了公开包（见 public_files.py 顶部说明）。
 
 PROXY_KEYS = [
     "HTTP_PROXY", "http_proxy",
@@ -46,6 +52,23 @@ PROXY_KEYS = [
 
 def log(msg: str) -> None:
     print(msg, flush=True)
+
+
+# 本次运行创建的临时目录；main() 在 finally 里清理（--keep-tmp 可保留）。
+# 早先不清理，%%TEMP%% 下越堆越多 —— 用户一次就要手工删掉 26 项。
+_TMP_DIRS: list[Path] = []
+
+
+def cleanup_tmp(keep: bool = False) -> None:
+    """清理本次运行创建的临时目录。`keep=True`（--keep-tmp）时只打印不删。"""
+    if not _TMP_DIRS:
+        return
+    if keep:
+        log("  保留临时目录（--keep-tmp）：" + "、".join(str(d) for d in _TMP_DIRS))
+        return
+    for d in _TMP_DIRS:
+        shutil.rmtree(d, ignore_errors=True)
+    log(f"  已清理临时目录 {len(_TMP_DIRS)} 个")
 
 
 def find_clawhub() -> list[str]:
@@ -99,13 +122,10 @@ def clean_env() -> dict:
 
 def read_frontmatter_version(skill_dir: Path) -> str | None:
     """从 SKILL.md frontmatter 读 version（找不到返回 None）。"""
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.exists():
-        nested = skill_dir / "skills" / skill_dir.name / "SKILL.md"
-        skill_md = nested if nested.exists() else skill_md
-    if not skill_md.exists():
+    root, _note = public_files.find_skill_root(skill_dir)
+    if root is None:
         return None
-    text = skill_md.read_text(encoding="utf-8", errors="replace")
+    text = (root / "SKILL.md").read_text(encoding="utf-8", errors="replace")
     match = re.search(r"^version:\s*([^\s#]+)", text, re.MULTILINE)
     return match.group(1).strip() if match else None
 
@@ -137,9 +157,20 @@ def git_commit(skill_dir: Path) -> str | None:
         return None
 
 
-def export_clean_dir(skill_dir: Path) -> Path:
-    """导出干净发布目录：优先 git archive，否则按排除表复制。"""
-    staging = Path(tempfile.mkdtemp(prefix="clawhub_publish_")) / skill_dir.name
+def export_clean_dir(skill_dir: Path) -> tuple[Path, Path]:
+    """导出干净发布目录，返回 (发布目录, 临时根目录)。
+
+    - 优先 `git archive`（只含跟踪文件）；
+    - 非 git 仓回退到 public_files 的公开文件集 —— **不能**只是跳过 EXCLUDE_DIRS，
+      否则 `storage/`（真实数据）、`env.json`（本机路径）、`index.json` 会被原样复制进
+      发布目录。魔搭/豆包那两个打包器当初就是这么把本机数据发上公开平台的
+      （见 public_files.py 顶部说明），ClawHub 这条只是刚好一直是 git 仓才没触发。
+    - 两者都返回**打包根**（SKILL.md 所在目录）：嵌套布局的仓库若把仓库根交给平台，
+      ClawHub 会找不到技能根。
+    """
+    tmp = Path(tempfile.mkdtemp(prefix="clawhub_publish_"))
+    _TMP_DIRS.append(tmp)
+    staging = tmp / skill_dir.name
     staging.mkdir(parents=True, exist_ok=True)
 
     archive = subprocess.run(
@@ -148,18 +179,24 @@ def export_clean_dir(skill_dir: Path) -> Path:
     )
     if archive.returncode == 0 and archive.stdout:
         subprocess.run(["tar", "-x", "-C", str(staging)], input=archive.stdout, check=True, timeout=120)
-        log(f"  发布目录（git archive）：{staging}")
-        return staging
+        root, note = public_files.find_skill_root(staging)
+        if root is None:
+            raise SystemExit(f"发布目录里找不到 SKILL.md：{note}")
+        log(f"  发布目录（git archive，只含跟踪文件）：{root}  [{note}]")
+        return root, tmp
 
-    for item in skill_dir.iterdir():
-        if item.is_dir() and item.name in EXCLUDE_DIRS:
-            continue
-        if item.is_dir():
-            shutil.copytree(item, staging / item.name, ignore=shutil.ignore_patterns(*EXCLUDE_DIRS))
-        else:
-            shutil.copy2(item, staging / item.name)
-    log(f"  发布目录（复制，非 git 仓）：{staging}")
-    return staging
+    files, root, source, excluded, _outside = public_files.pack_files(skill_dir)
+    log(f"  {public_files.describe(skill_dir)}")
+    for rel in excluded:
+        log(f"    ⤫ 排除 {rel}")
+    if root is None:
+        raise SystemExit(f"无法确定打包根：{source}")
+    for p in files:
+        dst = staging / public_files.pack_rel(p, root)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p, dst)
+    log(f"  发布目录（非 git 仓，按公开文件集复制）：{staging}")
+    return staging, tmp
 
 
 def run(cmd: list[str], env: dict, timeout: int = 300) -> subprocess.CompletedProcess:
@@ -191,20 +228,7 @@ def refresh_view() -> None:
         log(f"  ⚠ 刷新视图失败：{out.stderr.strip()}")
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="发布技能到 ClawHub 并刷新发布规划")
-    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
-    parser.add_argument("--slug", help="ClawHub slug，默认取目录名")
-    parser.add_argument("--name", help="展示名，默认取 slug")
-    parser.add_argument("--version", help="版本号，默认读 SKILL.md frontmatter")
-    parser.add_argument("--tags", default="latest", help="逗号分隔的 tag，默认 latest")
-    parser.add_argument("--changelog", default="", help="变更说明")
-    parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按 repo 反查）")
-    parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
-    parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
-    parser.add_argument("--dry-run", action="store_true", help="只预览，不真正发布")
-    args = parser.parse_args()
-
+def _run(args) -> int:
     skill_dir = Path(args.dir).expanduser().resolve()
     if not skill_dir.is_dir():
         raise SystemExit(f"技能目录不存在：{skill_dir}")
@@ -231,7 +255,7 @@ def main() -> int:
             )
         log(f"  已登录：{whoami.stdout.strip()}")
 
-    staging = export_clean_dir(skill_dir)
+    staging, _tmp = export_clean_dir(skill_dir)
 
     cmd = clawhub + ["--no-input", "skill", "publish", str(staging),
            "--slug", slug, "--name", args.name or slug, "--version", version,
@@ -289,6 +313,28 @@ def main() -> int:
 
     log(f"✅ 已发布 {slug}@{version}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="发布技能到 ClawHub 并刷新发布规划")
+    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
+    parser.add_argument("--slug", help="ClawHub slug，默认取目录名")
+    parser.add_argument("--name", help="展示名，默认取 slug")
+    parser.add_argument("--version", help="版本号，默认读 SKILL.md frontmatter")
+    parser.add_argument("--tags", default="latest", help="逗号分隔的 tag，默认 latest")
+    parser.add_argument("--changelog", default="", help="变更说明")
+    parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按 repo 反查）")
+    parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
+    parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
+    parser.add_argument("--dry-run", action="store_true", help="只预览，不真正发布")
+    parser.add_argument("--keep-tmp", action="store_true",
+                        help="保留临时发布目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
+    args = parser.parse_args()
+
+    try:
+        return _run(args)
+    finally:
+        cleanup_tmp(args.keep_tmp)
 
 
 if __name__ == "__main__":

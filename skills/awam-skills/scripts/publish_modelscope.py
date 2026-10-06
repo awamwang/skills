@@ -55,7 +55,6 @@ PLATFORM = "modelscope"
 API_BASE = "https://modelscope.cn/openapi/v1"
 MAX_ZIP_BYTES = 5 * 1024 * 1024  # 魔搭限制 5MB
 
-EXCLUDE_DIRS = {".git", ".cache", ".workbuddy", "__pycache__", "node_modules", ".venv", "venv"}
 TEXT_EXT = {".md", ".py", ".json", ".txt", ".yml", ".yaml", ".cfg", ".toml", ".sh"}
 
 
@@ -63,15 +62,29 @@ def log(msg: str) -> None:
     print(msg, flush=True)
 
 
+# 本次运行创建的临时目录；main() 在 finally 里清理（--keep-tmp 可保留）。
+# 早先不清理，%TEMP% 下越堆越多 —— 用户一次就要手工删掉 26 项。
+_TMP_DIRS: list[Path] = []
+
+
+def cleanup_tmp(keep: bool = False) -> None:
+    """清理本次运行创建的临时目录。`keep=True`（--keep-tmp）时只打印不删。"""
+    if not _TMP_DIRS:
+        return
+    if keep:
+        log("  保留临时目录（--keep-tmp）：" + "、".join(str(d) for d in _TMP_DIRS))
+        return
+    for d in _TMP_DIRS:
+        shutil.rmtree(d, ignore_errors=True)
+    log(f"  已清理临时目录 {len(_TMP_DIRS)} 个")
+
+
 def read_frontmatter(skill_dir: Path) -> tuple[str, str, str]:
     """从 SKILL.md frontmatter 取 (name, version, description)。"""
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.exists():
-        nested = skill_dir / "skills" / skill_dir.name / "SKILL.md"
-        skill_md = nested if nested.exists() else skill_md
-    if not skill_md.exists():
-        raise SystemExit(f"找不到 SKILL.md：{skill_dir}")
-    text = skill_md.read_text(encoding="utf-8", errors="replace")
+    root, note = public_files.find_skill_root(skill_dir)
+    if root is None:
+        raise SystemExit(f"找不到 SKILL.md：{skill_dir}（{note}）")
+    text = (root / "SKILL.md").read_text(encoding="utf-8", errors="replace")
 
     def pick(key: str, default: str = "") -> str:
         m = re.search(rf"^{key}:\s*(.+)$", text, re.MULTILINE)
@@ -84,15 +97,19 @@ def build_zip(skill_dir: Path, zip_path: Path) -> tuple[int, int]:
     """打包：根目录恰好 1 个 SKILL.md，文本文件统一 LF。
 
     只打 `public_files` 判定的公开文件——发布包是公开物，绝不能把 storage/、
-    env.json、index.json 这类本地私密数据一起传上去。"""
-    files, source, excluded = public_files.public_files(skill_dir)
+    env.json、index.json 这类本地私密数据一起传上去。
+    路径按**打包根**（SKILL.md 所在目录）取，嵌套布局的仓库也能得到「根下 1 个 SKILL.md」。
+    """
+    files, root, source, excluded, outside = public_files.pack_files(skill_dir)
     log(f"  {public_files.describe(skill_dir)}")
     for rel in excluded:
         log(f"    ⤫ 排除 {rel}")
+    if root is None:
+        raise SystemExit(f"无法确定打包根：{source}")
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in files:
-            rel = p.relative_to(skill_dir).as_posix()
+            rel = public_files.pack_rel(p, root)
             data = p.read_bytes()
             if p.suffix.lower() in TEXT_EXT:
                 data = data.replace(b"\r\n", b"\n")
@@ -297,27 +314,7 @@ def refresh_view() -> None:
         log(f"  ⚠ 刷新视图失败：{out.stderr.strip()}")
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="发布技能到魔搭 ModelScope")
-    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
-    parser.add_argument("--owner", help="魔搭用户名（也可 MODELSCOPE_OWNER）")
-    parser.add_argument("--token", help="魔搭 API token（也可 MODELSCOPE_API_TOKEN；不建议写在命令行历史里）")
-    parser.add_argument("--credentials", help="凭据 JSON 路径（默认自动查找，见 credentials.py）")
-    parser.add_argument("--via", choices=["auto", "sdk", "openapi"], default="auto",
-                        help="发布通道：auto（默认，优先 SDK）/ sdk（modelscope_hub）/ openapi（裸 HTTP）")
-    parser.add_argument("--show-credentials", action="store_true",
-                        help="只打印凭据来源（脱敏）后退出，用于排查")
-    parser.add_argument("--name", help="技能名，默认取 SKILL.md frontmatter 的 name")
-    parser.add_argument("--display-name", help="展示名，默认同名")
-    parser.add_argument("--license", default="MIT", help="许可证，默认 MIT")
-    parser.add_argument("--category", default="other", help="魔搭分类枚举，默认 other")
-    parser.add_argument("--body-json", help="自定义创建请求 JSON 模板，可用 {file_id}/{name}/{display_name}/{license}/{category}/{description} 占位")
-    parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按 repo 反查）")
-    parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
-    parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
-    parser.add_argument("--dry-run", action="store_true", help="只打包并校验，不上传")
-    args = parser.parse_args()
-
+def _run(args) -> int:
     if args.show_credentials:
         cred, src = creds.load(PLATFORM, args.credentials)
         log(f"凭据来源：{src}")
@@ -334,6 +331,7 @@ def main() -> int:
     log(f"技能：{name}@{version or '(未声明版本)'}")
 
     tmp = Path(tempfile.mkdtemp(prefix="modelscope_publish_"))
+    _TMP_DIRS.append(tmp)
     zip_path = tmp / f"{name}.zip"
     count, size = build_zip(skill_dir, zip_path)
     log(f"  打包完成：{count} 个文件，{size/1024:.1f} KB → {zip_path}")
@@ -426,6 +424,35 @@ def main() -> int:
 
     log(f"✅ 已发布到魔搭：{name}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="发布技能到魔搭 ModelScope")
+    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
+    parser.add_argument("--owner", help="魔搭用户名（也可 MODELSCOPE_OWNER）")
+    parser.add_argument("--token", help="魔搭 API token（也可 MODELSCOPE_API_TOKEN；不建议写在命令行历史里）")
+    parser.add_argument("--credentials", help="凭据 JSON 路径（默认自动查找，见 credentials.py）")
+    parser.add_argument("--via", choices=["auto", "sdk", "openapi"], default="auto",
+                        help="发布通道：auto（默认，优先 SDK）/ sdk（modelscope_hub）/ openapi（裸 HTTP）")
+    parser.add_argument("--show-credentials", action="store_true",
+                        help="只打印凭据来源（脱敏）后退出，用于排查")
+    parser.add_argument("--name", help="技能名，默认取 SKILL.md frontmatter 的 name")
+    parser.add_argument("--display-name", help="展示名，默认同名")
+    parser.add_argument("--license", default="MIT", help="许可证，默认 MIT")
+    parser.add_argument("--category", default="other", help="魔搭分类枚举，默认 other")
+    parser.add_argument("--body-json", help="自定义创建请求 JSON 模板，可用 {file_id}/{name}/{display_name}/{license}/{category}/{description} 占位")
+    parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按 repo 反查）")
+    parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
+    parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
+    parser.add_argument("--dry-run", action="store_true", help="只打包并校验，不上传")
+    parser.add_argument("--keep-tmp", action="store_true",
+                        help="保留临时打包目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
+    args = parser.parse_args()
+
+    try:
+        return _run(args)
+    finally:
+        cleanup_tmp(args.keep_tmp)
 
 
 if __name__ == "__main__":

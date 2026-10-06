@@ -24,6 +24,13 @@ htmlcov/
 .env.*
 !.env.example
 
+# 技能的本机数据 / 本机配置（**别删**：技能仓会公开发布，这些一旦提交就等于公开）
+# 发布脚本（public_files.py）也会再兜一层，但从源头不进 git 才是第一道防线
+storage/
+env.json
+index.json
+_user_meta.json
+
 # IDE
 .idea/
 .vscode/
