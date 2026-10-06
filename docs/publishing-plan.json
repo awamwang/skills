@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-03",
+  "updated": "2026-10-06",
   "platforms": {
     "github": {
       "name": "GitHub（基础层）",
@@ -79,6 +79,14 @@
       "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo" },
       "notes": "纯通用开发习惯，任何 agent 直接可用"
     },
+    "awam-shandianshuo-skill": {
+      "tier": "t3",
+      "repo": "awam-skills/awam-shandianshuo-skill",
+      "summary": "读取与更新闪电说（Shandianshuo）模型配置：供应商/模型/槽位 CRUD、开通关闭、备份+原子写",
+      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip" },
+      "status": { "github": "not_started", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
+      "notes": "绑定闪电说产品配置路径与 v3 schema；脚本已支持 --config 参数化，正式发布前建议再泛化"
+    },
     "github-organize": {
       "tier": "t1",
       "repo": "awam-skills/github-organize",
@@ -126,6 +134,22 @@
       "plan": { "github": "publish", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
       "status": { "github": "done", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
       "notes": "产品已停运、受众极小；除非转为通用笔记迁移再发"
+    },
+    "stock-hots-skill": {
+      "tier": "t3",
+      "repo": "awam-skills/stock-hots-skill",
+      "summary": "多平台热门股票榜单获取与聚合（WzSLinker 八合一聚合页首选，同花顺/通达信/东方财富/财联社直连兜底）",
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "skip", "agentpowers": "skip" },
+      "status": { "github": "not_started", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
+      "notes": "依赖外部榜单页/接口且部分平台直连有反爬；发布前建议把数据源参数化泛化"
+    },
+    "awam-todo-skill": {
+      "tier": "t3",
+      "repo": "awam-skills/awam-todo-skill",
+      "summary": "个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板",
+      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
+      "notes": "绑定本机存储目录与 Windows 能力（Cursor 打开工作空间、工作空间路径）；发布到平台前需把存储路径与系统依赖参数化泛化"
     }
   }
 }

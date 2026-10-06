@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-03
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-06
 
 ## 平台
 
@@ -27,12 +27,15 @@
 |------|:----:|:---:|:---:|:---:|:---:|:---:|:---:|
 | `ssh-deploy-skill` | 最值得 | ✅ | ✅ | ✅ | ✅ | ◐ | — |
 | `awam-git-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ◐ |
+| `awam-shandianshuo-skill` | 需改造 | ○ | — | ○ | ○ | — | — |
 | `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ |
 | `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
 | `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
 | `quicker-connector` | 实用 | ✅ | ◐ | ◐ | ◐ | ○ | — |
 | `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — |
 | `wiz-migration` | 需改造 | ✅ | — | — | — | — | — |
+| `stock-hots-skill` | 需改造 | ○ | ○ | ○ | ○ | — | — |
+| `awam-todo-skill` | 需改造 | ✅ | — | ○ | ○ | — | — |
 
 ## 明细
 
@@ -65,6 +68,21 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 可选 / 需微调 | ◐ 需处理 / 微调 |
+
+### awam-shandianshuo-skill · 需改造
+
+- 仓库：`awam-skills/awam-shandianshuo-skill`
+- 简介：读取与更新闪电说（Shandianshuo）模型配置：供应商/模型/槽位 CRUD、开通关闭、备份+原子写
+- 规划：绑定闪电说产品配置路径与 v3 schema；脚本已支持 --config 参数化，正式发布前建议再泛化
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ○ 未发布 |
+| LobeHub | 不建议 | — 不建议 |
+| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
+| 豆包技能中心 | 推荐发布 | ○ 未发布 |
+| ClawHub | 不建议 | — 不建议 |
+| AgentPowers | 不建议 | — 不建议 |
 
 ### github-organize · 最值得
 
@@ -153,6 +171,36 @@
 | LobeHub | 不建议 | — 不建议 |
 | 魔搭 ModelScope | 不建议 | — 不建议 |
 | 豆包技能中心 | 不建议 | — 不建议 |
+| ClawHub | 不建议 | — 不建议 |
+| AgentPowers | 不建议 | — 不建议 |
+
+### stock-hots-skill · 需改造
+
+- 仓库：`awam-skills/stock-hots-skill`
+- 简介：多平台热门股票榜单获取与聚合（WzSLinker 八合一聚合页首选，同花顺/通达信/东方财富/财联社直连兜底）
+- 规划：依赖外部榜单页/接口且部分平台直连有反爬；发布前建议把数据源参数化泛化
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ○ 未发布 |
+| LobeHub | 可选 / 需微调 | ○ 未发布 |
+| 魔搭 ModelScope | 可选 / 需微调 | ○ 未发布 |
+| 豆包技能中心 | 可选 / 需微调 | ○ 未发布 |
+| ClawHub | 不建议 | — 不建议 |
+| AgentPowers | 不建议 | — 不建议 |
+
+### awam-todo-skill · 需改造
+
+- 仓库：`awam-skills/awam-todo-skill`
+- 简介：个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板
+- 规划：绑定本机存储目录与 Windows 能力（Cursor 打开工作空间、工作空间路径）；发布到平台前需把存储路径与系统依赖参数化泛化
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ✅ 已发布 |
+| LobeHub | 不建议 | — 不建议 |
+| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
+| 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
 
