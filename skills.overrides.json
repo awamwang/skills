@@ -59,6 +59,11 @@
       "id": "ai",
       "title": "AI 助手",
       "topics": ["cat-ai", "ai"]
+    },
+    {
+      "id": "productivity",
+      "title": "个人效率",
+      "topics": ["cat-productivity", "productivity", "todo"]
     }
   ],
   "overrides": {
@@ -89,6 +94,10 @@
     "awam-skills/ximalaya-downloader-skill": {
       "category": "media",
       "description": "下载喜马拉雅免费专辑音频到本地。用自带 Python 脚本走公开接口，支持整专辑或区间下载为 m4a、默认生成 Markdown 清单、可选 ffmpeg 转 mp3；付费/VIP 集只跳过不绕过。"
+    },
+    "awam-skills/awam-todo-skill": {
+      "category": "productivity",
+      "description": "个人待办管理：在会话中解析自然语言建待办，落到按日期划分的 Markdown 存储并自动维护索引；支持依赖链、子任务、预案、逾期双出口、月度归档与本地网页看板"
     }
   },
   "exclude": [
