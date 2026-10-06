@@ -47,6 +47,7 @@ PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import credentials as creds  # noqa: E402  （凭据查找：见 credentials.py）
+import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 
 PLATFORM = "modelscope"
 
@@ -237,14 +238,15 @@ def publish_via_sdk(*, zip_path: Path, token: str, owner: str, name: str,
 
 
 def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
+    """就地改 `status.modelscope`，**逐字节保留原排版**（见 plan_store.py 的说明）。"""
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
-    entry = (plan.get("skills") or {}).get(skill_key)
-    if entry is None:
+    if (plan.get("skills") or {}).get(skill_key) is None:
         log(f"  ⚠ 规划里没有技能 `{skill_key}`，跳过规划更新")
         return False
-    entry.setdefault("status", {})["modelscope"] = status
-    plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    log(f"  规划已更新：skills.{skill_key}.status.modelscope = {status}")
+    if not plan_store.set_status(plan_path, skill_key, "modelscope", status):
+        log(f"  ⚠ 无法就地更新技能 `{skill_key}` 的 status.modelscope，请手动改")
+        return False
+    log(f"  规划已更新：skills.{skill_key}.status.modelscope = {status}（保留原排版）")
     return True
 
 

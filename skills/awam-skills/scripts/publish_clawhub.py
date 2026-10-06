@@ -26,6 +26,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
@@ -164,18 +167,16 @@ def run(cmd: list[str], env: dict, timeout: int = 300) -> subprocess.CompletedPr
 
 
 def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
-    """把 publishing-plan.json 中该技能的 status.clawhub 置为指定值。"""
+    """就地改 `status.clawhub`，**逐字节保留原排版**（见 plan_store.py 的说明）。"""
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     skills = plan.get("skills") or {}
-    entry = skills.get(skill_key)
-    if entry is None:
+    if skills.get(skill_key) is None:
         log(f"  ⚠ 规划里没有技能 `{skill_key}`，跳过规划更新；请手动补 skills 条目")
         return False
-    entry.setdefault("status", {})["clawhub"] = status
-    plan_path.write_text(
-        json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    log(f"  规划已更新：skills.{skill_key}.status.clawhub = {status}")
+    if not plan_store.set_status(plan_path, skill_key, "clawhub", status):
+        log(f"  ⚠ 无法就地更新技能 `{skill_key}` 的 status.clawhub，请手动改")
+        return False
+    log(f"  规划已更新：skills.{skill_key}.status.clawhub = {status}（保留原排版）")
     return True
 
 

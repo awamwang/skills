@@ -1,3 +1,7 @@
 # 本地平台凭据（绝不入库；推荐落点其实是 ~/.workbuddy/secrets/）
 .credentials.local.json
 *.credentials.json
+
+# Python 字节码
+__pycache__/
+*.pyc
