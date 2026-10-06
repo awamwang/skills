@@ -7,13 +7,17 @@
   故打包时所有文本文件统一转 LF（二进制写回，防止 \\r\\n 被重新引入）
 - 详情接口 `/skills/@owner/name` 可能 404，验证只用列表接口 `/skills?filter.owner=`
 
-鉴权：`--token` 或环境变量 `MODELSCOPE_API_TOKEN`（魔搭个人中心 → API token）。
-token 只走环境变量/命令行，不写入仓库。
+鉴权：凭据由 [credentials.py](credentials.py) 自动查找，无需每次手填：
+命令行 --token/--owner > 环境变量 MODELSCOPE_API_TOKEN/MODELSCOPE_OWNER
+> ~/.workbuddy/secrets/modelscope.json（推荐落点，不在 git 内）
+> ~/.config/awam-skills/credentials.json > 索引仓 .credentials.local.json
+凭据永不入库，日志只打印来源路径与脱敏后的 token。
 
 用法（索引仓根任意路径均可，脚本自定位）：
-  python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓> --owner <魔搭用户名> --dry-run
-  MODELSCOPE_API_TOKEN=xxx python ... --dir <技能仓> --owner <用户名>
-  python ... --dir <技能仓> --owner <用户名> --no-plan    # 发布但不改规划
+  python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓> --dry-run
+  python ... --dir <技能仓>                # 凭据自动查，发布后自动刷新规划
+  python ... --dir <技能仓> --no-plan      # 发布但不改规划
+  python ... --show-credentials            # 只查凭据来源（脱敏），便于排查
 """
 
 from __future__ import annotations
@@ -36,6 +40,11 @@ from pathlib import Path
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials as creds  # noqa: E402  （凭据查找：见 credentials.py）
+
+PLATFORM = "modelscope"
 
 API_BASE = "https://modelscope.cn/openapi/v1"
 MAX_ZIP_BYTES = 5 * 1024 * 1024  # 魔搭限制 5MB
@@ -97,10 +106,21 @@ def http_json(url: str, token: str, data: bytes | None = None,
     req_headers.update(headers or {})
     req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        # 强制直连：本机 HTTPS_PROXY 对国内站的 HTTPS 隧道会返回 502
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", "replace")
+        if e.code == 401:
+            raise SystemExit(
+                f"HTTP 401 鉴权失败 {url}\n{raw[:400]}\n\n"
+                "魔搭 OpenAPI 只认「API Key」（魔搭个人中心 → Access Token / API Key，"
+                "通常为 ms_ 开头的字符串），**SDK 令牌（UUID 格式）不能用于 OpenAPI**。\n"
+                "若凭据文件里填的是 SDK token，请把 API Key 写入 api_key 字段：\n"
+                f"  {creds.candidate_paths(PLATFORM)[0]}\n"
+                '  {"owner": "<用户名>", "api_key": "ms_xxx...", "sdk_token": "<保留供 SDK 用>"}'
+            )
         raise SystemExit(f"HTTP {e.code} {url}\n{raw[:800]}")
     except urllib.error.URLError as e:
         raise SystemExit(f"网络失败 {url}：{e}")
@@ -152,6 +172,9 @@ def main() -> int:
     parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
     parser.add_argument("--owner", help="魔搭用户名（也可 MODELSCOPE_OWNER）")
     parser.add_argument("--token", help="魔搭 API token（也可 MODELSCOPE_API_TOKEN；不建议写在命令行历史里）")
+    parser.add_argument("--credentials", help="凭据 JSON 路径（默认自动查找，见 credentials.py）")
+    parser.add_argument("--show-credentials", action="store_true",
+                        help="只打印凭据来源（脱敏）后退出，用于排查")
     parser.add_argument("--name", help="技能名，默认取 SKILL.md frontmatter 的 name")
     parser.add_argument("--display-name", help="展示名，默认同名")
     parser.add_argument("--license", default="MIT", help="许可证，默认 MIT")
@@ -162,6 +185,13 @@ def main() -> int:
     parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
     parser.add_argument("--dry-run", action="store_true", help="只打包并校验，不上传")
     args = parser.parse_args()
+
+    if args.show_credentials:
+        cred, src = creds.load(PLATFORM, args.credentials)
+        log(f"凭据来源：{src}")
+        log(f"  owner = {cred.get('owner') or '(空)'}")
+        log(f"  token = {creds.mask(cred.get('token', ''))}")
+        return 0 if cred.get("token") else 1
 
     skill_dir = Path(args.dir).expanduser().resolve()
     if not skill_dir.is_dir():
@@ -178,20 +208,30 @@ def main() -> int:
     if size > MAX_ZIP_BYTES:
         raise SystemExit(f"zip 超过魔搭 5MB 限制（{size/1024:.1f} KB），请先瘦身")
 
+    cred, src = creds.load(PLATFORM, args.credentials)
+    token = args.token or cred.get("token", "")
+    owner = args.owner or cred.get("owner", "")
+
     if args.dry_run:
-        log("✅ dry-run 通过（未上传）。正式发布：补 --owner 与 MODELSCOPE_API_TOKEN 再跑一次")
+        log(f"  凭据来源：{src}｜owner={owner or '(空)'}｜token={creds.mask(token)}")
+        if not token or not owner:
+            log("⚠ 凭据不完整，正式发布会失败。补齐方式（任选其一）：")
+            log(creds.describe(PLATFORM))
+        else:
+            log("✅ dry-run 通过（未上传）。去掉 --dry-run 即正式发布")
         return 0
 
-    token = args.token or os.environ.get("MODELSCOPE_API_TOKEN")
-    owner = args.owner or os.environ.get("MODELSCOPE_OWNER")
     if not token:
         raise SystemExit(
-            "缺少魔搭 API token。设置环境变量后重跑：\n"
-            "  MODELSCOPE_API_TOKEN=<token> python ... --owner <用户名>\n"
-            "token 获取：魔搭个人中心 → API token（不要写进仓库）"
+            "缺少魔搭 API token。已查找以下位置均未找到：\n"
+            f"{creds.describe(PLATFORM)}\n"
+            "任选其一写入（推荐 ~/.workbuddy/secrets/modelscope.json，不在 git 内）：\n"
+            '  {"owner": "<魔搭用户名>", "sdk_token": "<token>"}\n'
+            "token 获取：魔搭个人中心 → API token / SDK token（不要写进仓库）"
         )
     if not owner:
-        raise SystemExit("缺少魔搭用户名：--owner <用户名> 或 MODELSCOPE_OWNER")
+        raise SystemExit("缺少魔搭用户名：--owner <用户名>、MODELSCOPE_OWNER，或凭据文件里的 owner 字段")
+    log(f"  凭据来源：{src}｜owner={owner}｜token={creds.mask(token)}")
 
     log("  上传 zip…")
     up = multipart_upload(f"{API_BASE}/files/upload", token, zip_path)

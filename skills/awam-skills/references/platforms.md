@@ -21,6 +21,28 @@
 | **ClawHub** | 国际 | [publish_clawhub.py](../scripts/publish_clawhub.py)（封装 `clawhub` CLI） | npm 包 `clawhub` + 设备流登录 | OpenClaw 生态技能（quicker-connector） |
 | **AgentPowers** | 国际 | MCP 标准提交（8 层安全扫描） | 账号 / 后台 | 高品质 / 付费向（windows-autostart、letsencrypt 等） |
 
+## 凭据管理（通用）
+
+发布脚本**不要求每次手填 token**——由 [scripts/credentials.py](../scripts/credentials.py) 统一查找，
+查找顺序固定为：**命令行 > 环境变量 > 用户级配置 > 仓内 `.local` 配置**：
+
+| 顺序 | 来源 | 示例 |
+|---|---|---|
+| 1 | 命令行参数 | `--token` / `--owner` |
+| 2 | 环境变量 | `MODELSCOPE_API_TOKEN` / `MODELSCOPE_OWNER` |
+| 3 | `<PLATFORM>_CREDENTIALS` 指向的文件 | `MODELSCOPE_CREDENTIALS=/path/cred.json` |
+| 4 | **用户级配置（推荐落点）** | `~/.workbuddy/secrets/modelscope.json` |
+| 5 | 用户级统一配置 | `~/.config/awam-skills/credentials.json`（`platforms.<platform>` 段） |
+| 6 | 仓内本地配置 | 索引仓 `.credentials.local.json`（已 gitignore） |
+
+- **推荐落点是 `~/.workbuddy/secrets/<platform>.json`**：该目录不在任何 git 仓库内，天然不会被提交。
+- 配置格式（平台专属文件）：`{"owner": "<用户名>", "api_key": "...", "sdk_token": "..."}`；
+  token 字段按 `token > api_key > sdk_token > access_token` 取第一个非空值。
+  统一文件则写在 `platforms.<platform>` 段下。
+- 排查：`python scripts/publish_modelscope.py --dir <技能仓> --show-credentials`
+  只打印**来源路径与脱敏 token**（前 8 位 + 长度），不打印明文。
+- 铁律：token 不入库、不进日志；脚本日志只输出来源路径。
+
 ## 各平台发布步骤
 
 ### LobeHub（已实测）
@@ -60,7 +82,12 @@ MODELSCOPE_API_TOKEN=<token> python skills/awam-skills/scripts/publish_modelscop
 4. 验证：`GET /skills?filter.owner=<owner>&page_size=50`（**列表接口可靠**；详情接口 `/skills/@owner/name` 可能 404，以列表为准）。
 
 **踩坑：** SKILL.md 为 **CRLF 行尾**时上传报 `UploadedFileInvalid: must contain 'name' field`（实际是行尾问题）——必须转 LF，Windows 下用 `write_bytes` / 二进制写回，防止 `\r\n` 被重新引入。
-- 鉴权：`Authorization: Bearer <token>`；token 仅走环境变量，不入仓库 / 日志。
+- 鉴权：`Authorization: Bearer <token>`。
+- **坑：SDK 令牌 ≠ OpenAPI Key。** 魔搭个人中心有两种凭证，**UUID 格式的 SDK 令牌不能用于 OpenAPI**，
+  用了会在 `/files/upload` 报 `401 InvalidAuthentication: user not authenticated`（而列表接口不带 token 也返回 200，
+  容易误判为接口问题）。OpenAPI 要的是 **API Key**（Access Token，通常 `ms_` 开头），填到凭据文件的 `api_key` 字段。
+- 请求**必须强制直连**：本机 `HTTPS_PROXY` 对魔搭（国内站）的 HTTPS 隧道会返回 502，脚本已用
+  `ProxyHandler({})` 绕过；自己写请求时同理。
 
 ### 豆包技能中心（已实测导入包）
 

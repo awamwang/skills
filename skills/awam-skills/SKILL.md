@@ -22,6 +22,7 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
 | 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包各有 [scripts/](scripts/) 下对应脚本） |
+| 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 列组织 / 索引远程 / 本机 awam 技能并对比 | [查询](references/query.md) |
 | 改 skill 结构、写更好的 prompt、通用质量优化 | **拒绝**（Non-goals） |
 
@@ -63,6 +64,7 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 3. 按对应 reference 逐步执行；缺分类、发布目标平台等决策时**问用户**，不替用户拍板索引语义。
 4. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
 5. **平台发布 / 规划更新**走 [references/platforms.md](references/platforms.md)；每完成一个平台发布，更新 `docs/publishing-plan.json` 的 `status` 并跑 [scripts/plan_skills.py](scripts/plan_skills.py) 刷新视图。ClawHub 用 [scripts/publish_clawhub.py](scripts/publish_clawhub.py) 一键完成「干净目录 → 发布 → 刷新规划」。
+   **凭据不要问用户**：由 [scripts/credentials.py](scripts/credentials.py) 按固定顺序自动查找（首选 `~/.workbuddy/secrets/<platform>.json`）；缺凭据时才提示用户去补哪个文件。排查用 `--show-credentials`（脱敏）。
 6. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
 
 ## 本机发现（可选）
