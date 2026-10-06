@@ -68,7 +68,7 @@
   ],
   "overrides": {
     "awam-skills/quicker-connector": {
-      "category": "desktop",
+      "category": "productivity",
       "description": "OpenClaw 技能，连接 Quicker 自动化工具；支持读取动作库、自然语言匹配并执行动作"
     },
     "awam-skills/ssh-deploy-skill": {

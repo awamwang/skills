@@ -31,7 +31,7 @@
 | `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ |
 | `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
 | `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
-| `quicker-connector` | 实用 | ✅ | ◐ | ◐ | ◐ | ○ | — |
+| `quicker-connector` | 实用 | ✅ | ◐ | ◐ | ◐ | ✅ | — |
 | `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — |
 | `wiz-migration` | 需改造 | ✅ | — | — | — | — | — |
 | `stock-hots-skill` | 需改造 | ○ | ○ | ○ | ○ | — | — |
@@ -141,7 +141,7 @@
 | LobeHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | 魔搭 ModelScope | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | 豆包技能中心 | 可选 / 需微调 | ◐ 需处理 / 微调 |
-| ClawHub | 推荐发布 | ○ 未发布 |
+| ClawHub | 推荐发布 | ✅ 已发布 |
 | AgentPowers | 不建议 | — 不建议 |
 
 ### awam-windows-backup-skill · 需改造

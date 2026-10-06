@@ -16,9 +16,9 @@
 | 平台 | 区域 | 发布通道 | 前置 | 适合技能 |
 |------|------|----------|------|----------|
 | **LobeHub** | 国际 | SKILL.md bundle + CLI `npx -y @lobehub/market-cli` | 账号 + 网页提交仓库 | 跨 agent 通用型（ssh-deploy、awam-git、github-organize） |
-| **魔搭 ModelScope** | 国内 | Skills Central + `modelscope-skill-upload`（OpenAPI） | 账号 | 通用与运维技能均合适 |
-| **豆包技能中心** | 国内 | 豆包电脑版侧边栏「技能」→ 技能中心导入 | 豆包客户端 | 个人工作流与通用技能；成本最低 |
-| **ClawHub** | 国际 | `clawhub skill publish ./<dir>` | OpenClaw / clawhub CLI | OpenClaw 生态技能（quicker-connector） |
+| **魔搭 ModelScope** | 国内 | [publish_modelscope.py](../scripts/publish_modelscope.py)（zip→file_id→创建） | 账号 + `MODELSCOPE_API_TOKEN` | 通用与运维技能均合适 |
+| **豆包技能中心** | 国内 | [publish_doubao.py](../scripts/publish_doubao.py) 打包 + 客户端导入 | 豆包客户端 | 个人工作流与通用技能；成本最低 |
+| **ClawHub** | 国际 | [publish_clawhub.py](../scripts/publish_clawhub.py)（封装 `clawhub` CLI） | npm 包 `clawhub` + 设备流登录 | OpenClaw 生态技能（quicker-connector） |
 | **AgentPowers** | 国际 | MCP 标准提交（8 层安全扫描） | 账号 / 后台 | 高品质 / 付费向（windows-autostart、letsencrypt 等） |
 
 ## 各平台发布步骤
@@ -47,6 +47,12 @@ curl -X POST "https://market.lobehub.com/api/v1/user/skills/<identifier>/version
 ### 魔搭 ModelScope（已实测）
 
 优先用魔搭上的 **`modelscope-skill-upload`** 技能流程：打包 zip → 上传拿 file_id → 创建 Skill → 验证。
+本机脚本 [scripts/publish_modelscope.py](../scripts/publish_modelscope.py) 已封装同一流程（含 LF 转换、5MB 校验、发后刷新规划）：
+
+```bash
+MODELSCOPE_API_TOKEN=<token> python skills/awam-skills/scripts/publish_modelscope.py \
+  --dir <技能仓> --owner <魔搭用户名>            # 加 --dry-run 只打包校验
+```
 
 1. 打包：zip **根目录必须恰好 1 个 `SKILL.md`**，frontmatter 含 `name` / `version` / `description`，zip ≤5MB。
 2. 上传：`POST https://modelscope.cn/openapi/v1/files/upload`（multipart 字段 `file`）→ 取 `data.id` 作 file_id。
@@ -61,13 +67,34 @@ curl -X POST "https://market.lobehub.com/api/v1/user/skills/<identifier>/version
 - 导入格式：**文件夹或 zip 内含 `SKILL.md` 即可**，名称须与技能同名；打包 zip 时**顶层为技能同名文件夹**。
 - 入口：豆包电脑版侧边栏「技能·连接器·伙伴」→ 我的技能 → 新建 → 上传技能（拖入文件夹 / zip）。
 - 个人工作流与通用技能，接入成本最低。
+- **无公开上传 API**，只能客户端导入。用 [scripts/publish_doubao.py](../scripts/publish_doubao.py) 打包并打印步骤，导入成功后加 `--mark-done` 更新规划：
 
-### ClawHub（OpenClaw，未实测）
+```bash
+python skills/awam-skills/scripts/publish_doubao.py --dir <技能仓> [--out <zip>]
+python skills/awam-skills/scripts/publish_doubao.py --dir <技能仓> --mark-done   # 导入成功后
+```
 
-- 先预览：`clawhub skill publish ./my-skill --dry-run`（检查元数据完整、文件合规）。
-- 正式发布：`clawhub skill publish ./my-skill --slug <slug> --name <name> --version <v> --changelog <msg>`。
-- 适合 OpenClaw 生态技能；`quicker-connector` 首选此平台。
-- 社区含少量恶意样本（有第三方审计称约 7%），发布端无碍；若安装他人技能留意来源。
+### ClawHub（OpenClaw，已实测 2026-10-06：quicker-connector 1.2.0 → 1.5.0）
+
+**一键脚本（推荐）**：[scripts/publish_clawhub.py](../scripts/publish_clawhub.py) 已封装下列全部踩坑（干净目录、去代理、`--no-input`、发后刷新规划）：
+
+```bash
+export CLAWHUB_BIN=<clawhub.cmd 或 dist/cli.js 路径>   # 不在 PATH 时必填
+python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --dry-run   # 预览
+python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓>             # 发布 + 刷新规划
+```
+
+手敲命令时的要点：
+
+1. **CLI 是 npm 无作用域包 `clawhub`**（v0.23.3，作者 steipete）。`@clawhub/cli` 只有 0.0.2，是占位包，**不要用**。
+2. **必须带 `--no-input`**。缺了它，遇到「同 slug 已存在，是否更新」的交互确认会**静默挂死**——无输出、只能靠超时杀掉（`EXIT=124`），极易误判为网络问题。
+3. **代理会让发布 502**：本机 `HTTPS_PROXY` 对 registry 的 HTTPS 隧道返回 `Proxy response (502) !== 200 when HTTP Tunneling`，而直连正常。发布时剥离代理：
+   `env -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy NO_PROXY='*' clawhub ...`（脚本已内置）。
+4. **登录走设备流**：`clawhub login --device --no-browser`。后台进程不会自动开浏览器，需人工打开 CLI 打印的 `https://clawhub.ai/cli/device?user_code=XXXX` 并确认；code 15 分钟有效。轮询报 `Device flow error: true` 时重开一个即可（旧的会作废）。dry-run **免登录**。
+5. **已存在的 slug 就是版本更新**，不用 rename/merge：`inspect <slug>` 看当前线上版本，publish 时给新 `--version` 即可。
+6. **publication 是异步的**：publish 返回 `ok: true` + `status: pending-publication`，此时 `inspect` 可能仍显示旧 `latestVersion`。用 `clawhub skill verify <slug>` 跟进扫描/上线，不要因为 inspect 没变就重复发布。
+7. **上传慢**：35 文件 / 约 1.6MB 实测约 3.5 分钟才有返回，超时给足（脚本 600s）。
+8. 适合 OpenClaw 生态技能；`quicker-connector` 首选此平台。社区含少量恶意样本（有第三方审计称约 7%），发布端无碍；若安装他人技能留意来源。
 
 ### AgentPowers（未实测）
 

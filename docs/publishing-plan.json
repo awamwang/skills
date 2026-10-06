@@ -116,7 +116,7 @@
       "repo": "awam-skills/quicker-connector",
       "summary": "OpenClaw 技能，连接 Quicker 自动化工具（读取动作库、自然语言匹配并执行动作）",
       "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "publish", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "not_started", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "done", "agentpowers": "skip" },
       "notes": "明确绑定 OpenClaw 生态 → ClawHub 首选；可选 ClawMart 付费变现"
     },
     "awam-windows-backup-skill": {
