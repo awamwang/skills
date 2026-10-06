@@ -68,13 +68,37 @@ curl -X POST "https://market.lobehub.com/api/v1/user/skills/<identifier>/version
 
 ### 魔搭 ModelScope（已实测）
 
-优先用魔搭上的 **`modelscope-skill-upload`** 技能流程：打包 zip → 上传拿 file_id → 创建 Skill → 验证。
-本机脚本 [scripts/publish_modelscope.py](../scripts/publish_modelscope.py) 已封装同一流程（含 LF 转换、5MB 校验、发后刷新规划）：
+**优先走官方 SDK**（与魔搭上的 `modelscope-skill-upload` 技能同一套流程）：
+打包 zip → 上传拿 file_id → 创建 Skill → 验证。
+
+#### 前置：装 SDK（一次性）
 
 ```bash
-MODELSCOPE_API_TOKEN=<token> python skills/awam-skills/scripts/publish_modelscope.py \
-  --dir <技能仓> --owner <魔搭用户名>            # 加 --dry-run 只打包校验
+python skills/awam-skills/scripts/setup_env.py            # 幂等；已装则跳过
+python skills/awam-skills/scripts/setup_env.py --check    # 只检测
 ```
+
+装的是 `modelscope` + **`modelscope_hub`**（1.40 起 hub 客户端已拆成独立包，
+skill 上传能力在后者）。两者都用 `--no-deps` 装，避免被拖入 torch；
+再显式补齐真正需要的 `requests`/`idna`/`charset-normalizer`/`certifi`/
+`urllib3`/`packaging`/`tqdm`/`addict`/`filelock`/`setuptools`/`cryptography`。
+
+#### 发布
+
+```bash
+python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓>            # 凭据自动查找
+python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓> --dry-run  # 打包校验 + 通道自检
+```
+
+`--via auto|sdk|openapi`（默认 auto，优先 SDK）：
+
+| 通道 | 实现 | 依赖 |
+|---|---|---|
+| `sdk` | `modelscope_hub`：`upload_file_to_openapi()` → `create_repo(repo_type="skill")`（内部 `POST /skills`，payload 用 `skill_file`） | 需 setup_env |
+| `openapi` | 裸 HTTP：`POST /files/upload` → `POST /skills` | 仅标准库 |
+
+**两条通道用的是同一个 AccessToken**；SDK 只是把 token 同时放进
+`Authorization: Bearer` 与 cookie（`m_session_id` / `modelscope_session`）。
 
 1. 打包：zip **根目录必须恰好 1 个 `SKILL.md`**，frontmatter 含 `name` / `version` / `description`，zip ≤5MB。
 2. 上传：`POST https://modelscope.cn/openapi/v1/files/upload`（multipart 字段 `file`）→ 取 `data.id` 作 file_id。
@@ -82,10 +106,14 @@ MODELSCOPE_API_TOKEN=<token> python skills/awam-skills/scripts/publish_modelscop
 4. 验证：`GET /skills?filter.owner=<owner>&page_size=50`（**列表接口可靠**；详情接口 `/skills/@owner/name` 可能 404，以列表为准）。
 
 **踩坑：** SKILL.md 为 **CRLF 行尾**时上传报 `UploadedFileInvalid: must contain 'name' field`（实际是行尾问题）——必须转 LF，Windows 下用 `write_bytes` / 二进制写回，防止 `\r\n` 被重新引入。
-- 鉴权：`Authorization: Bearer <token>`。
-- **坑：SDK 令牌 ≠ OpenAPI Key。** 魔搭个人中心有两种凭证，**UUID 格式的 SDK 令牌不能用于 OpenAPI**，
-  用了会在 `/files/upload` 报 `401 InvalidAuthentication: user not authenticated`（而列表接口不带 token 也返回 200，
-  容易误判为接口问题）。OpenAPI 要的是 **API Key**（Access Token，通常 `ms_` 开头），填到凭据文件的 `api_key` 字段。
+- 鉴权：`Authorization: Bearer <token>`（SDK 通道同时带 cookie）。
+- **token 获取：<https://modelscope.cn/my/myaccesstoken>**（用户中心 → AccessToken）。
+  凭据文件里填 `api_key`（或 `sdk_token`，两者都会被采用）。
+- **坑：token 失效的报错长什么样。** 服务端会明确回
+  `[400] 登录失败，AccessToken错误，请从用户中心获取AccessToken或刷新`（`code=10010103009`，SDK `login()` 的判断最权威）；
+  或裸 HTTP 下报 `401 InvalidAuthentication: user not authenticated`。
+  注意**列表接口不带 token 也返回 200**，别把「列表能通」当成「token 有效」。
+  出现上述报错时不要去改代码，直接去用户中心刷新 token。
 - 请求**必须强制直连**：本机 `HTTPS_PROXY` 对魔搭（国内站）的 HTTPS 隧道会返回 502，脚本已用
   `ProxyHandler({})` 绕过；自己写请求时同理。
 

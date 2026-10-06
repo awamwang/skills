@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """把组织下技能发布到魔搭 ModelScope（Skills Central），并刷新发布规划视图。
 
-流程（详见 references/platforms.md）：打包 zip → 上传取 file_id → 创建 Skill → 列表接口验证。
-已内置两个实测坑：
+两条等价通道（`--via auto|sdk|openapi`，默认 auto 优先 SDK）：
+- **sdk**：走魔搭官方 SDK `modelscope_hub`（`upload_file_to_openapi` 取 file_id
+  → `create_repo(repo_type="skill")`，内部即 `POST /skills`）。**SDK token 即可**，推荐。
+- **openapi**：裸 HTTP 调 `POST /files/upload` 与 `POST /skills`，只依赖标准库。
+
+流程（详见 references/platforms.md）：打包 zip → 上传取 file_id → 创建 Skill → 验证。已内置两个实测坑：
 - zip 根目录必须**恰好 1 个** SKILL.md；SKILL.md 为 CRLF 会报 `must contain 'name' field`，
   故打包时所有文本文件统一转 LF（二进制写回，防止 \\r\\n 被重新引入）
 - 详情接口 `/skills/@owner/name` 可能 404，验证只用列表接口 `/skills?filter.owner=`
@@ -147,6 +151,91 @@ def multipart_upload(url: str, token: str, file_path: Path, timeout: int = 300) 
     )
 
 
+def check_channel(via: str) -> str:
+    """dry-run 时自检通道可用性（不联网）。"""
+    if via == "openapi":
+        return "openapi（仅需标准库，可用）"
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("modelscope_hub") is None:
+            return "sdk 不可用：未安装 modelscope_hub（跑 scripts/setup_env.py）"
+        from modelscope_hub.api import HubApi  # noqa: F401
+        return "sdk（modelscope_hub 已就绪）"
+    except Exception as e:  # noqa: BLE001
+        if via == "sdk":
+            return f"sdk 不可用：{type(e).__name__} {e}（跑 scripts/setup_env.py）"
+        return f"sdk 不可用（{type(e).__name__}），auto 将回退 openapi"
+
+
+def publish_via_openapi(*, zip_path: Path, token: str, owner: str, name: str,
+                        display_name: str, license_id: str, category: str,
+                        description: str, body_json: str | None) -> dict:
+    """通道 A：直接调 OpenAPI（zip → /files/upload → /skills）。"""
+    log("  [OpenAPI] 上传 zip…")
+    up = multipart_upload(f"{API_BASE}/files/upload", token, zip_path)
+    file_id = (up.get("data") or {}).get("id") or up.get("id")
+    if not file_id:
+        raise SystemExit(f"上传未返回 file_id：{json.dumps(up, ensure_ascii=False)[:400]}")
+    log(f"  [OpenAPI] file_id = {file_id}")
+
+    if body_json:
+        body = json.loads(body_json.format(
+            file_id=file_id, name=name, display_name=display_name,
+            license=license_id, category=category, description=description,
+        ))
+    else:
+        body = {
+            "file_id": file_id,
+            "name": name,
+            "display_name": display_name,
+            "description": description,
+            "license": license_id,
+            "category": category,
+        }
+    log("  [OpenAPI] 创建 Skill…")
+    return http_json(
+        f"{API_BASE}/skills", token,
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+
+
+def publish_via_sdk(*, zip_path: Path, token: str, owner: str, name: str,
+                    display_name: str, license_id: str, category: str,
+                    description: str) -> dict:
+    """通道 B：走魔搭官方 SDK（modelscope_hub），鉴权与上传都用 SDK 实现。
+
+    魔搭 1.40+ 把 hub 客户端拆成 `modelscope_hub` 包，它原生支持 skill：
+    `upload_file_to_openapi()` 取 file_id → `create_repo(repo_type="skill")`
+    内部即 `POST /skills`（payload 用 `skill_file` 传 file_id）。
+    """
+    try:
+        from modelscope_hub.api import HubApi
+    except ImportError as e:
+        raise SystemExit(
+            "未安装魔搭 SDK（SDK 通道需要），先跑初始化：\n"
+            f"  {sys.executable} {Path(__file__).resolve().parent / 'setup_env.py'}\n"
+            f"（import 失败：{e}）"
+        )
+
+    api = HubApi(token=token)
+    log("  [SDK] 上传 zip…")
+    file_id = api.upload_file_to_openapi(zip_path)
+    log(f"  [SDK] file_id = {file_id}")
+
+    extra: dict = {"skill_file": file_id}
+    if category:
+        extra["category"] = category
+    log("  [SDK] 创建 Skill…")
+    info = api.create_repo(
+        f"{owner}/{name}", repo_type="skill",
+        license=license_id, chinese_name=display_name,
+        description=description, **extra,
+    )
+    return info.to_dict() if hasattr(info, "to_dict") else {"repo_id": str(info)}
+
+
 def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     entry = (plan.get("skills") or {}).get(skill_key)
@@ -173,6 +262,8 @@ def main() -> int:
     parser.add_argument("--owner", help="魔搭用户名（也可 MODELSCOPE_OWNER）")
     parser.add_argument("--token", help="魔搭 API token（也可 MODELSCOPE_API_TOKEN；不建议写在命令行历史里）")
     parser.add_argument("--credentials", help="凭据 JSON 路径（默认自动查找，见 credentials.py）")
+    parser.add_argument("--via", choices=["auto", "sdk", "openapi"], default="auto",
+                        help="发布通道：auto（默认，优先 SDK）/ sdk（modelscope_hub）/ openapi（裸 HTTP）")
     parser.add_argument("--show-credentials", action="store_true",
                         help="只打印凭据来源（脱敏）后退出，用于排查")
     parser.add_argument("--name", help="技能名，默认取 SKILL.md frontmatter 的 name")
@@ -214,6 +305,7 @@ def main() -> int:
 
     if args.dry_run:
         log(f"  凭据来源：{src}｜owner={owner or '(空)'}｜token={creds.mask(token)}")
+        log(f"  通道自检（--via {args.via}）：{check_channel(args.via)}")
         if not token or not owner:
             log("⚠ 凭据不完整，正式发布会失败。补齐方式（任选其一）：")
             log(creds.describe(PLATFORM))
@@ -233,48 +325,39 @@ def main() -> int:
         raise SystemExit("缺少魔搭用户名：--owner <用户名>、MODELSCOPE_OWNER，或凭据文件里的 owner 字段")
     log(f"  凭据来源：{src}｜owner={owner}｜token={creds.mask(token)}")
 
-    log("  上传 zip…")
-    up = multipart_upload(f"{API_BASE}/files/upload", token, zip_path)
-    file_id = (up.get("data") or {}).get("id") or up.get("id")
-    if not file_id:
-        raise SystemExit(f"上传未返回 file_id：{json.dumps(up, ensure_ascii=False)[:400]}")
-    log(f"  file_id = {file_id}")
+    common = dict(
+        zip_path=zip_path, token=token, owner=owner, name=name,
+        display_name=args.display_name or name, license_id=args.license,
+        category=args.category, description=description,
+    )
 
-    if args.body_json:
-        body_text = args.body_json.format(
-            file_id=file_id, name=name, display_name=args.display_name or name,
-            license=args.license, category=args.category, description=description,
-        )
-        body = json.loads(body_text)
-    else:
-        body = {
-            "file_id": file_id,
-            "name": name,
-            "display_name": args.display_name or name,
-            "description": description,
-            "license": args.license,
-            "category": args.category,
-        }
-    log("  创建 Skill…")
-    try:
-        created = http_json(
-            f"{API_BASE}/skills", token,
-            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-        )
-    except SystemExit as e:
-        msg = str(e)
-        if "409" in msg:
-            log("  ⚠ 已存在同名技能（409 DuplicateEntity）——如需更新版本，请在魔搭后台操作或用 --body-json 调整")
-        else:
-            log("  ⚠ 创建失败。若报字段错误，用 --body-json 自定义请求体（占位符见 --help）")
-        raise
+    created = None
+    if args.via in ("auto", "sdk"):
+        try:
+            created = publish_via_sdk(**common)
+        except SystemExit as e:
+            if args.via == "sdk":
+                raise
+            log(f"  ⚠ SDK 通道不可用（{str(e).splitlines()[0]}），回退 OpenAPI 通道")
+    if created is None:
+        try:
+            created = publish_via_openapi(**common, body_json=args.body_json)
+        except SystemExit as e:
+            msg = str(e)
+            if "409" in msg:
+                log("  ⚠ 已存在同名技能（409 DuplicateEntity）——如需更新版本，请在魔搭后台操作或用 --body-json 调整")
+            else:
+                log("  ⚠ 创建失败。若报字段错误，用 --body-json 自定义请求体（占位符见 --help）")
+            raise
     log(f"  创建成功：{json.dumps(created, ensure_ascii=False)[:300]}")
 
-    listing = http_json(f"{API_BASE}/skills?filter.owner={owner}&page_size=50", token)
-    items = (listing.get("data") or {}).get("items") or listing.get("items") or []
-    hit = [x for x in items if (x.get("name") or x.get("display_name")) in (name, args.display_name)]
-    log(f"  列表接口验证：{'命中 ' + str(hit[0].get('name')) if hit else '未命中（可能异步生效）'}")
+    if not args.via == "sdk":
+        listing = http_json(f"{API_BASE}/skills?filter.owner={owner}&page_size=50", token)
+        items = (listing.get("data") or {}).get("items") or listing.get("items") or []
+        hit = [x for x in items if (x.get("name") or x.get("display_name")) in (name, args.display_name)]
+        log(f"  列表接口验证：{'命中 ' + str(hit[0].get('name')) if hit else '未命中（可能异步生效）'}")
+    else:
+        log("  （SDK 通道由 create_repo 返回结果为准，跳过列表复核）")
 
     if not args.no_plan:
         plan_path = Path(args.plan)
