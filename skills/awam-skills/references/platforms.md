@@ -2,7 +2,7 @@
 
 把 `awam-skills` 组织下已公开的技能发布到第三方技能平台，并同步发布规划。
 
-> 平台命令 / 接口以各平台**官方文档为最新权威**；本页给出当前公开流程、入口与**实测踩坑**（截至 2026-10，已实测发布 `ssh-deploy-skill`：魔搭、LobeHub、豆包导入包）。账号注册、登录与付费由用户完成，本 Skill 不代为处理。
+> 平台命令 / 接口以各平台**官方文档为最新权威**；本页给出当前公开流程、入口与**实测踩坑**（截至 2026-10，已实测发布 `ssh-deploy-skill`：魔搭、LobeHub、豆包导入包；`quicker-connector`：魔搭 **SDK 通道** + ClawHub + 豆包导入包）。账号注册、登录与付费由用户完成，本 Skill 不代为处理。
 
 ## 通用前置
 
@@ -103,7 +103,8 @@ python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓> --dry-
 1. 打包：zip **根目录必须恰好 1 个 `SKILL.md`**，frontmatter 含 `name` / `version` / `description`，zip ≤5MB。
 2. 上传：`POST https://modelscope.cn/openapi/v1/files/upload`（multipart 字段 `file`）→ 取 `data.id` 作 file_id。
 3. 创建：`POST /skills`（body 含 file_id、display_name、license、category 等）；重复创建报 **409 DuplicateEntity**。
-4. 验证：`GET /skills?filter.owner=<owner>&page_size=50`（**列表接口可靠**；详情接口 `/skills/@owner/name` 可能 404，以列表为准）。
+4. 验证：`GET /openapi/v1/skills/<owner>/<name>`（**详情接口最可靠**，带 `Authorization: Bearer <token>` 返回 `{"success": true, "data": {...}}`，含 `license` / `category` / `tags` / `last_modified` / `install_command`）。
+   ⚠ 实测（2026-10-07，quicker-connector 经 SDK 通道发布成功）：`GET /openapi/v1/skills?filter.owner=<owner>` **返回 total 0**，发布成功也一样 —— 列表接口不可用，**别用列表判定成功与否**；另外列表不带 token 也返回 200，更不能当鉴权判据。SDK 通道以 `create_repo` 返回的 `id` 为准，再用上面的详情接口复核。
 
 **踩坑：** SKILL.md 为 **CRLF 行尾**时上传报 `UploadedFileInvalid: must contain 'name' field`（实际是行尾问题）——必须转 LF，Windows 下用 `write_bytes` / 二进制写回，防止 `\r\n` 被重新引入。
 - 鉴权：`Authorization: Bearer <token>`（SDK 通道同时带 cookie）。
