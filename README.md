@@ -50,11 +50,18 @@
 |------|------|
 | [ximalaya-downloader-skill](https://github.com/awam-skills/ximalaya-downloader-skill) | 下载喜马拉雅免费专辑音频到本地。用自带 Python 脚本走公开接口，支持整专辑或区间下载为 m4a、默认生成 Markdown 清单、可选 ffmpeg 转 mp3；付费/VIP 集只跳过不绕过。 |
 
+### 个人效率
+
+| 技能 | 简介 |
+|------|------|
+| [awam-todo-skill](https://github.com/awam-skills/awam-todo-skill) | 个人待办管理：在会话中解析自然语言建待办，落到按日期划分的 Markdown 存储并自动维护索引；支持依赖链、子任务、预案、逾期双出口、月度归档与本地网页看板 |
+
 ### 其他
 
 | 技能 | 简介 |
 |------|------|
 | [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | Issue, renew, and maintain Let's Encrypt TLS certificates on Windows via ACME. Routes among win-acme, Posh-ACME, and Certify The Web; covers HTTP-01/DNS-01,… |
+| [stock-hots-skill](https://github.com/awam-skills/stock-hots-skill) | 获取并聚合多平台热门股票榜单（东方财富/同花顺/通达信/淘股吧/财联社/开盘啦/雪球/大智慧），输出综合前十与各平台 TOP-N |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
 
 ## 说明
