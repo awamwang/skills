@@ -48,7 +48,7 @@
 
 | 技能 | 简介 |
 |------|------|
-| [awam-todo-skill](https://github.com/awam-skills/awam-todo-skill) | 个人待办管理：在会话中解析自然语言建待办，落到按日期划分的 Markdown 存储并自动维护索引；支持依赖链、子任务、预案、逾期双出口、月度归档与本地网页看板 |
+| [awam-todo-skill](https://github.com/awam-skills/awam-todo-skill) | 个人待办管理：在会话中解析自然语言建待办，落到按日期划分的 Markdown 存储并自动维护索引；支持依赖链、子任务、预案、逾期双出口、月度归档与本地网页看板；存储目录与「用编辑器打开」的编辑器均可按环境配置 |
 | [quicker-connector](https://github.com/awam-skills/quicker-connector) | OpenClaw 技能，连接 Quicker 自动化工具；支持读取动作库、自然语言匹配并执行动作 |
 
 ### 其他
