@@ -126,6 +126,19 @@ def check_layout(skill_dir: Path, rep: Report) -> Path | None:
     return skill_md
 
 
+def is_index_bundled(skill_dir: Path) -> bool:
+    """技能目录是否是「索引仓自带的技能」（索引仓根含 `skills.overrides.json`）。
+
+    这类技能不单独发组织仓（见 SKILL.md「本机发现」），所以 origin 指向
+    `awamwang/skills` 而非 `awam-skills/*` 是**正常**的。不特判的话，在索引仓里
+    跑预检会恒亮一条无意义的 WARN —— 恒亮告警会训练人忽略告警（同 CRLF 那条）。
+    """
+    rc, top = git(skill_dir, "rev-parse", "--show-toplevel")
+    if rc != 0 or not top:
+        return False
+    return (Path(top) / "skills.overrides.json").is_file()
+
+
 def check_git(skill_dir: Path, rep: Report) -> bool:
     rc, _ = git(skill_dir, "rev-parse", "--is-inside-work-tree")
     if rc != 0:
@@ -143,6 +156,8 @@ def check_git(skill_dir: Path, rep: Report) -> bool:
     elif f"{ORG}/" in url:
         m = re.search(rf"{ORG}/([\w.-]+?)(?:\.git)?$", url)
         rep.add("pass", "origin 指向组织仓", f"{ORG}/{m.group(1) if m else '?'}")
+    elif is_index_bundled(skill_dir):
+        rep.add("pass", "origin 指向索引仓", f"{url}（索引仓自带技能，不单独发组织仓）")
     else:
         rep.add("warn", "origin 指向组织仓", f"origin 不是 {ORG}/…：{url}")
 

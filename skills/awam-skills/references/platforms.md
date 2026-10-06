@@ -28,7 +28,7 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓> --json     # �
 | 检查项 | 为什么 |
 |---|---|
 | SKILL.md 存在 + **打包根唯一** | 嵌套布局若按仓库根打包，zip 根下没有 SKILL.md（见下节） |
-| 是 git 仓库 / 有 origin | 不是 git 仓：ClawHub 的 `git archive` 直接失败，打包器还会退化成黑名单遍历 |
+| 是 git 仓库 / 有 origin | 不是 git 仓：ClawHub 的 `git archive` 直接失败，打包器还会退化成黑名单遍历。（索引仓自带技能 origin 指索引仓本身属正常，不报 WARN） |
 | **本地领先远程** → FAIL | 发出去的内容比 GitHub 上的仓新，两边对不上（实测 awam-todo 带着 1 个未推提交） |
 | 工作区有未提交改动 → WARN | 平台发的是工作区内容，与仓库 HEAD 不一致 |
 | frontmatter `name` / `version` / `description` | 魔搭与 LobeHub 都硬性要求；**老仓常只缺 `version`**（实测 windows-autostart） |
