@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """查询并对比三处技能来源：组织仓、索引仓远程、本机 awam 目录。
 
-用法（在任意目录均可，脚本自定位索引仓根）：
-  python skills/awam-skills/scripts/query_skills.py
+用法：
+  cd <索引仓> && python skills/awam-skills/scripts/query_skills.py   # 在索引仓里跑最稳
+  python <任意路径>/query_skills.py --index-root <索引仓>              # 或显式指定索引仓根
   python skills/awam-skills/scripts/query_skills.py --only org
   python skills/awam-skills/scripts/query_skills.py --format json
+
+索引仓根定位顺序：--index-root > 环境变量 AWAM_SKILLS_INDEX_ROOT > 从当前目录向上找
+（含 skills.overrides.json + README.md）> 脚本相对位置。定位失败会明确报错并给解法 ——
+在 `~/.workbuddy/skills/` 这类安装副本下跑，脚本相对位置会推错（见 resolve_index_root）。
 """
 
 from __future__ import annotations
@@ -25,11 +30,54 @@ API = "https://api.github.com"
 ORG = "awam-skills"
 DEFAULT_LOCAL_AWAM = Path.home() / ".agents" / "skills" / "awam"
 
-# skills/awam-skills/scripts → 索引仓根
-INDEX_ROOT = Path(__file__).resolve().parents[3]
+# 索引仓根的标记文件（都在 ⇒ 认定是索引仓）
+INDEX_MARKERS = ("skills.overrides.json", "README.md")
+
+
+def _looks_like_index_root(p: Path) -> bool:
+    try:
+        return p.is_dir() and all((p / m).exists() for m in INDEX_MARKERS)
+    except OSError:
+        return False
+
+
+def resolve_index_root(explicit: str | None = None) -> Path | None:
+    """定位索引仓根：「显式 > 环境变量 > 从 cwd 向上找 > 脚本相对位置」。
+
+    为什么不能只靠「脚本相对位置」：本脚本按 `parents[3]` 推索引仓根，这只在
+    索引仓内部成立。装在 `~/.workbuddy/skills/awam-skills` 这类**安装副本**下时，
+    `parents[3]` 会算成 `~/.workbuddy` —— 恰好也像是个目录，于是脚本不报错，
+    只是查出一堆空结果，很难判断是「真没有」还是「根找错了」。
+    """
+    cands: list[Path] = []
+    if explicit:
+        cands.append(Path(explicit).expanduser())
+    env = os.environ.get("AWAM_SKILLS_INDEX_ROOT")
+    if env:
+        cands.append(Path(env).expanduser())
+    cwd = Path.cwd()
+    cands.extend([cwd, *cwd.parents])
+    cands.append(Path(__file__).resolve().parents[3])
+    for c in cands:
+        if _looks_like_index_root(c):
+            return c.resolve()
+    return None
+
+
+# skills/awam-skills/scripts → 索引仓根（能被 resolve 覆盖，见 _apply_index_root）
+INDEX_ROOT = resolve_index_root() or Path(__file__).resolve().parents[3]
 OVERRIDES_PATH = INDEX_ROOT / "skills.overrides.json"
 README_PATH = INDEX_ROOT / "README.md"
 BUNDLED_SKILLS_DIR = INDEX_ROOT / "skills"
+
+
+def _apply_index_root(root: Path) -> None:
+    """重绑模块级路径常量（argparse 之后调用）。"""
+    global INDEX_ROOT, OVERRIDES_PATH, README_PATH, BUNDLED_SKILLS_DIR
+    INDEX_ROOT = Path(root).resolve()
+    OVERRIDES_PATH = INDEX_ROOT / "skills.overrides.json"
+    README_PATH = INDEX_ROOT / "README.md"
+    BUNDLED_SKILLS_DIR = INDEX_ROOT / "skills"
 
 SKILL_LINK_RE = re.compile(
     r"\|\s*\[([^\]]+)\]\((https://github\.com/[^)\s]+)\)\s*\|",
@@ -543,7 +591,27 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="索引仓只用本地 README，不读 origin",
     )
+    parser.add_argument(
+        "--index-root",
+        help="索引仓根目录（默认自动定位：环境变量 AWAM_SKILLS_INDEX_ROOT > 从 cwd 向上找 > 脚本位置）",
+    )
     args = parser.parse_args(argv)
+
+    if args.index_root:
+        _apply_index_root(Path(args.index_root))
+    if not _looks_like_index_root(INDEX_ROOT):
+        print(
+            "找不到索引仓根（需同时含 skills.overrides.json 与 README.md）。\n"
+            f"  当前判定为：{INDEX_ROOT}\n"
+            "  常见原因：用的是 ~/.workbuddy/skills/ 下的**安装副本**，"
+            "脚本按相对位置推不出索引仓。\n"
+            "  三种解法（任选）：\n"
+            "    1) 在索引仓目录下执行：cd <索引仓> && python skills/awam-skills/scripts/query_skills.py\n"
+            "    2) 显式指定：--index-root <索引仓路径>\n"
+            "    3) 设环境变量：AWAM_SKILLS_INDEX_ROOT=<索引仓路径>",
+            file=sys.stderr,
+        )
+        return 2
 
     token = resolve_token()
     org: list[SkillEntry] = []
