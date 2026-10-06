@@ -106,6 +106,46 @@ python skills/awam-skills/scripts/publish_modelscope.py --dir <技能仓> --dry-
 4. 验证：`GET /openapi/v1/skills/<owner>/<name>`（**详情接口最可靠**，带 `Authorization: Bearer <token>` 返回 `{"success": true, "data": {...}}`，含 `license` / `category` / `tags` / `last_modified` / `install_command`）。
    ⚠ 实测（2026-10-07，quicker-connector 经 SDK 通道发布成功）：`GET /openapi/v1/skills?filter.owner=<owner>` **返回 total 0**，发布成功也一样 —— 列表接口不可用，**别用列表判定成功与否**；另外列表不带 token 也返回 200，更不能当鉴权判据。SDK 通道以 `create_repo` 返回的 `id` 为准，再用上面的详情接口复核。
 
+#### ⚠ 发布包内容（P0，2026-10-07 实际踩到）
+
+**曾把 `storage/`、`env.json`、`index.json`、`web/*.log` 一起发上公开平台。**
+早期打包器只排除 `.git` / `.workbuddy` / `__pycache__` 这类工程目录，于是把本地私密数据
+（真实待办内容、主机名、本机 cwd、编辑器路径）打进了公开包 —— **发布包是公开物**。
+
+现在统一走 [scripts/public_files.py](../scripts/public_files.py)：**只发 git 跟踪文件**
+（= 作者选择公开的表面，也是「技能仓须已在 GitHub 公开」这条前置的自然含义），
+再叠一层硬黑名单（`storage/`、`env.json`、`index.json`、`*.log`、`*.pyc` …）兜底。
+`publish_modelscope.py` / `publish_doubao.py` 都已改用它，并在日志里逐条打印被排除的文件。
+`publish_clawhub.py` 走 `git archive`，本来就是干净的 —— **这也是当初没发现问题的原因**。
+
+**发布后必须复核**：把线上内容拉回来列一遍文件清单，确认无私密文件。只看接口返回的
+`success: true` 不够 —— 本次正是靠下载复核才确认泄漏已清除。
+
+#### 已存在的技能怎么更新内容
+
+同名技能不能再 create，魔搭也没有「新建版本」接口。**替换内容的通道是 settings**：
+
+```
+POST  /openapi/v1/files/upload                                → 新 file_id
+PATCH /openapi/v1/skills/{owner}/{skill_name}/settings
+      body: {"skill_file": "<新 file_id>"}                     → {"success": true}
+```
+
+`publish_modelscope.py` 已内置：SDK 通道遇 409 会自动转成上面的更新流程
+（日志会写「改为更新已有技能的内容」）。
+
+**OpenAPI 通道的字段名**（以 SDK 的 `CreateSkillPayload` 为准）：技能名是 **`skill_name`**
+（不是 `name`），内容文件是 **`skill_file`**（不是 `file_id`）。早先脚本写成 `name` / `file_id`，
+服务端一直回 `InputParameterError: skill name is required` —— 这就是 OpenAPI 通道长期不可用的原因，已修正。
+
+**解释器必须选装了 SDK 的那个**：本机 `modelscope_hub` 装在
+`~/.workbuddy/binaries/python/envs/default/Scripts/python.exe`。用不带 SDK 的解释器跑，
+`--via auto` 会**静默回退到 OpenAPI 通道**，于是下载 100MB 的上传白做、只在最后一步报错。
+跑之前先看输出里的「通道自检」那一行。
+
+**旧上传的 zip 不会因为替换 `skill_file` 而被删除**，它留在魔搭的「上传文件」里。
+一旦发布过含私密数据的旧文件，除了替换技能内容，还要去魔搭用户中心把那个 file 删掉。
+
 **踩坑：** SKILL.md 为 **CRLF 行尾**时上传报 `UploadedFileInvalid: must contain 'name' field`（实际是行尾问题）——必须转 LF，Windows 下用 `write_bytes` / 二进制写回，防止 `\r\n` 被重新引入。
 - 鉴权：`Authorization: Bearer <token>`（SDK 通道同时带 cookie）。
 - **token 获取：<https://modelscope.cn/my/myaccesstoken>**（用户中心 → AccessToken）。
@@ -151,6 +191,15 @@ python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓>          
 6. **publication 是异步的**：publish 返回 `ok: true` + `status: pending-publication`，此时 `inspect` 可能仍显示旧 `latestVersion`。用 `clawhub skill verify <slug>` 跟进扫描/上线，不要因为 inspect 没变就重复发布。
 7. **上传慢**：35 文件 / 约 1.6MB 实测约 3.5 分钟才有返回，超时给足（脚本 600s）。
 8. 适合 OpenClaw 生态技能；`quicker-connector` 首选此平台。社区含少量恶意样本（有第三方审计称约 7%），发布端无碍；若安装他人技能留意来源。
+9. **`verify` 返回 `ok:false` 不等于发布失败**（2026-10-07 实测 awam-todo）。`skill verify <slug>` 的两个常见 reason：
+   - `security.status_not_clean`：平台侧 LLM 安全复审给 `security.status=suspicious`。**这是平台级共性，不是本仓缺陷** ——
+     已上线的 `quicker-connector` 同样如此（它的原话是「能跑本地动作、部分网络与确认行为披露不足」）。
+     `inspect` 里的 `Moderate CLEAN` 与 `verify` 里的 security 判定是两套东西，后者偏保守，技能照常上线可访问。
+   - `card.missing`：缺少 `skill-card.md`（`card.available=false`）。`quicker-connector` 是 `true`，说明这
+     能补；**但别自己造这个文件**（见下方「禁止」），要补就照平台给的 `card.url` 规范来。
+10. **中文文件名会被上传成乱码**：实测 `优化建议.md` 在线上文件清单里变成 `浼樺寲寤鸿.md`
+    （CLI / registry 的编码往返问题）。功能无碍，但看起来脏；要么接受，要么发布前把非 ASCII
+    文件名的文件改名 / 排除。
 
 ### AgentPowers（未实测）
 

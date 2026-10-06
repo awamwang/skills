@@ -48,6 +48,7 @@ PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import credentials as creds  # noqa: E402  （凭据查找：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 
 PLATFORM = "modelscope"
 
@@ -80,21 +81,23 @@ def read_frontmatter(skill_dir: Path) -> tuple[str, str, str]:
 
 
 def build_zip(skill_dir: Path, zip_path: Path) -> tuple[int, int]:
-    """打包：根目录恰好 1 个 SKILL.md，文本文件统一 LF。"""
+    """打包：根目录恰好 1 个 SKILL.md，文本文件统一 LF。
+
+    只打 `public_files` 判定的公开文件——发布包是公开物，绝不能把 storage/、
+    env.json、index.json 这类本地私密数据一起传上去。"""
+    files, source, excluded = public_files.public_files(skill_dir)
+    log(f"  {public_files.describe(skill_dir)}")
+    for rel in excluded:
+        log(f"    ⤫ 排除 {rel}")
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, dirs, files in os.walk(skill_dir):
-            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
-            for f in files:
-                if f.endswith(".pyc"):
-                    continue
-                p = Path(root) / f
-                rel = p.relative_to(skill_dir).as_posix()
-                data = p.read_bytes()
-                if p.suffix.lower() in TEXT_EXT:
-                    data = data.replace(b"\r\n", b"\n")
-                z.writestr(rel, data)
-                n += 1
+        for p in files:
+            rel = p.relative_to(skill_dir).as_posix()
+            data = p.read_bytes()
+            if p.suffix.lower() in TEXT_EXT:
+                data = data.replace(b"\r\n", b"\n")
+            z.writestr(rel, data)
+            n += 1
 
     with zipfile.ZipFile(zip_path) as z:
         root_items = [x for x in z.namelist() if x.count("/") == 0]
@@ -182,13 +185,18 @@ def publish_via_openapi(*, zip_path: Path, token: str, owner: str, name: str,
 
     if body_json:
         body = json.loads(body_json.format(
-            file_id=file_id, name=name, display_name=display_name,
+            file_id=file_id, skill_file=file_id, name=name, skill_name=name,
+            owner=owner, display_name=display_name,
             license=license_id, category=category, description=description,
         ))
     else:
+        # 字段名以 SDK 的 CreateSkillPayload 为准：技能名是 `skill_name`（不是 name），
+        # 内容文件是 `skill_file`（不是 file_id）。早先写成 name/file_id 会被服务端
+        # 判为「skill name is required」——这就是 OpenAPI 通道一直报 400 的原因。
         body = {
-            "file_id": file_id,
-            "name": name,
+            "skill_name": name,
+            "owner": owner,
+            "skill_file": file_id,
             "display_name": display_name,
             "description": description,
             "license": license_id,
@@ -235,6 +243,37 @@ def publish_via_sdk(*, zip_path: Path, token: str, owner: str, name: str,
         description=description, **extra,
     )
     return info.to_dict() if hasattr(info, "to_dict") else {"repo_id": str(info)}
+
+
+def update_via_sdk(*, zip_path: Path, token: str, owner: str, name: str,
+                   display_name: str, license_id: str, category: str,
+                   description: str) -> dict:
+    """替换已存在 Skill 的内容：上传新 zip → PATCH /skills/{owner}/{name}/settings。
+
+    魔搭对同名技能不允许再次 create（409 DuplicateEntity），也没有「新建版本」
+    接口——替换内容的唯一通道是有权限的 settings.skill_file。
+    典型的必须用它的情况：首次发布时打包器把 storage/、env.json 等本地数据
+    一起传了上去，需要立刻用干净包覆盖。
+    """
+    from modelscope_hub.api import HubApi
+
+    api = HubApi(token=token)
+    log("  [SDK] 上传 zip…")
+    file_id = api.upload_file_to_openapi(zip_path)
+    log(f"  [SDK] file_id = {file_id}")
+
+    settings: dict = {"skill_file": file_id}
+    if display_name:
+        settings["display_name"] = display_name
+    if description:
+        settings["description"] = description
+    if license_id:
+        settings["license"] = license_id
+    if category:
+        settings["category"] = category
+    log("  [SDK] 更新已有 Skill 的 settings（替换 skill_file）…")
+    info = api.openapi.update_skill_settings(owner, name, settings)
+    return info if isinstance(info, dict) else {"result": str(info)}
 
 
 def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
@@ -334,6 +373,7 @@ def main() -> int:
     )
 
     created = None
+    updated = False
     if args.via in ("auto", "sdk"):
         try:
             created = publish_via_sdk(**common)
@@ -341,6 +381,15 @@ def main() -> int:
             if args.via == "sdk":
                 raise
             log(f"  ⚠ SDK 通道不可用（{str(e).splitlines()[0]}），回退 OpenAPI 通道")
+        except Exception as e:  # noqa: BLE001
+            msg = str(e)
+            if "409" in msg or "DuplicateEntity" in msg or "already exists" in msg:
+                # 同名技能已存在：不能再 create，改为替换内容（见 update_via_sdk 说明）
+                log("  ⚠ 同名技能已存在（409 DuplicateEntity）→ 改为更新已有技能的内容")
+                created = update_via_sdk(**common)
+                updated = True
+            else:
+                raise
     if created is None:
         try:
             created = publish_via_openapi(**common, body_json=args.body_json)
@@ -351,7 +400,7 @@ def main() -> int:
             else:
                 log("  ⚠ 创建失败。若报字段错误，用 --body-json 自定义请求体（占位符见 --help）")
             raise
-    log(f"  创建成功：{json.dumps(created, ensure_ascii=False)[:300]}")
+    log(f"  {'更新' if updated else '创建'}成功：{json.dumps(created, ensure_ascii=False)[:300]}")
 
     if not args.via == "sdk":
         listing = http_json(f"{API_BASE}/skills?filter.owner={owner}&page_size=50", token)

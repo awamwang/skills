@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
@@ -51,20 +52,21 @@ def read_frontmatter_name(skill_dir: Path) -> str:
 
 
 def build_zip(skill_dir: Path, zip_path: Path, top: str) -> tuple[int, int]:
+    """打包。只打 `public_files` 判定的公开文件——导入包会被上传到平台，属公开物，
+    绝不能把 storage/、env.json、index.json 这类本地私密数据带进去。"""
+    files, source, excluded = public_files.public_files(skill_dir)
+    log(f"  {public_files.describe(skill_dir)}")
+    for rel in excluded:
+        log(f"    ⤫ 排除 {rel}")
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        for root, dirs, files in os.walk(skill_dir):
-            dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
-            for f in files:
-                if f.endswith(".pyc"):
-                    continue
-                p = Path(root) / f
-                rel = p.relative_to(skill_dir).as_posix()
-                data = p.read_bytes()
-                if p.suffix.lower() in TEXT_EXT:
-                    data = data.replace(b"\r\n", b"\n")
-                z.writestr(f"{top}/{rel}", data)
-                n += 1
+        for p in files:
+            rel = p.relative_to(skill_dir).as_posix()
+            data = p.read_bytes()
+            if p.suffix.lower() in TEXT_EXT:
+                data = data.replace(b"\r\n", b"\n")
+            z.writestr(f"{top}/{rel}", data)
+            n += 1
     return n, zip_path.stat().st_size
 
 
