@@ -18,10 +18,10 @@
 
 ## 步骤
 
-1. 在索引仓根（或任意能解析到本脚本的路径）执行：
+1. **在索引仓根执行最稳**（脚本要能定位到索引仓，才能读 `skills.overrides.json` 与 `README.md`）：
 
 ```bash
-python skills/awam-skills/scripts/query_skills.py
+cd <索引仓> && python skills/awam-skills/scripts/query_skills.py
 ```
 
 Windows PowerShell 示例：
@@ -29,6 +29,13 @@ Windows PowerShell 示例：
 ```powershell
 python "$PWD\skills\awam-skills\scripts\query_skills.py"
 ```
+
+   索引仓根定位顺序：`--index-root` > 环境变量 `AWAM_SKILLS_INDEX_ROOT` >
+   从当前目录向上找（含 `skills.overrides.json` + `README.md`）> 脚本相对位置。
+
+   ⚠ **别用 `~/.workbuddy/skills/awam-skills/scripts/query_skills.py` 跑**（安装副本）：
+   脚本按相对位置推根，在副本下会算成 `~/.workbuddy` —— 那里也有目录，脚本不会报错，
+   只是查出一堆空结果，很难判断是「真没有」还是「根找错了」。定位失败时会明确报错并给解法。
 
 2. 把脚本 stdout（Markdown 表 + 分源列表）原样或略整理后回复用户；**不要**再手工复跑 API。
 3. 若报 `org:` API 错误：确认 `gh auth login` 或环境变量 `GH_TOKEN` / `GITHUB_TOKEN`。
@@ -44,6 +51,7 @@ python "$PWD\skills\awam-skills\scripts\query_skills.py"
 | `--format json` | JSON（给后续脚本或精确字段） |
 | `--no-remote` | 索引只用本地 README |
 | `--local-dir <path>` | 覆盖本机 awam 目录 |
+| `--index-root <path>` | 显式指定索引仓根（在索引仓外执行时用） |
 
 ## 校验
 

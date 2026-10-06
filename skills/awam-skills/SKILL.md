@@ -1,11 +1,14 @@
 ---
 name: awam-skills
+version: 0.1.0
 description: >-
   按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
   索引仓远程 / 本机 ~/.agents/skills/awam 的技能列表与存在性，以及把技能发布到第三方
   平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / AgentPowers）并维护发布规划
-  （docs/publishing-plan.json）。在用户提到创建技能、初始化技能仓、发布技能、收录到
+  （docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度（git 状态、
+  与远程是否同步、frontmatter、打包根、会不会把本机私密数据打进公开包）。
+  在用户提到创建技能、初始化技能仓、发布技能、收录到
   awam-skills 索引、发布到平台 / 市场、发布规划、查询技能列表、对比本机与线上技能，
   或显式调用 /awam-skills 时使用。不处理通用 Skill 质量优化或对他人仓的 review。
 disable-model-invocation: true
@@ -20,6 +23,7 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | 用户意图 | 走哪条 |
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
+| **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、会不会夹带私密数据） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
 | 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包各有 [scripts/](scripts/) 下对应脚本） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
@@ -63,24 +67,47 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 1. 判定意图：创建 / 发布 / 平台发布 / 查询 / 创建后发布（先创建再实现，发布另开或用户明确要求时再发）。
 2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
 3. 按对应 reference 逐步执行；缺分类、发布目标平台等决策时**问用户**，不替用户拍板索引语义。
-4. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
-5. **平台发布 / 规划更新**走 [references/platforms.md](references/platforms.md)；每完成一个平台发布，更新 `docs/publishing-plan.json` 的 `status` 并跑 [scripts/plan_skills.py](scripts/plan_skills.py) 刷新视图。ClawHub 用 [scripts/publish_clawhub.py](scripts/publish_clawhub.py) 一键完成「干净目录 → 发布 → 刷新规划」。
+4. **任何发布动作之前，先跑 [scripts/preflight.py](scripts/preflight.py)**：
+   `python skills/awam-skills/scripts/preflight.py --dir <技能仓>`。
+   它一次查完「发出去就收不回」的本机问题：不是 git 仓 / 工作区有未提交改动 / 本地领先远程
+   （发的内容与 GitHub 对不上）/ frontmatter 缺 `version`（魔搭硬要求）/ 打包根定不下来
+   / 私密文件已被 git 跟踪 / 索引仓副本与安装副本内容不一致。
+   结果 `FAIL` 时**不要发布**，先处理。
+5. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
+6. **平台发布 / 规划更新**走 [references/platforms.md](references/platforms.md)；每完成一个平台发布，更新 `docs/publishing-plan.json` 的 `status` 并跑 [scripts/plan_skills.py](scripts/plan_skills.py) 刷新视图。ClawHub 用 [scripts/publish_clawhub.py](scripts/publish_clawhub.py) 一键完成「干净目录 → 发布 → 刷新规划」。
    **凭据不要问用户**：由 [scripts/credentials.py](scripts/credentials.py) 按固定顺序自动查找（首选 `~/.workbuddy/secrets/<platform>.json`）；缺凭据时才提示用户去补哪个文件。排查用 `--show-credentials`（脱敏）。
    **依赖缺失先跑** [scripts/setup_env.py](scripts/setup_env.py)：魔搭发布走官方 SDK（`modelscope_hub`），首次使用需装依赖；脚本幂等，`--check` 只检测。
-6. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
+   **发布源必须是索引仓里的技能目录**，不要用 `~/.workbuddy/skills/` 下的安装副本 —— 那里混着宿主注入的元数据，且脱离 git 后安全兜底只剩黑名单。
+7. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
 
 ## 本机发现（可选）
 
-本 Skill 只活在索引仓，不单独发组织仓。若要在其它工作区调用，把本目录链到 Agent skills 路径，例如：
+本 Skill 只活在索引仓，不单独发组织仓。若要在其它工作区调用，把本目录链到 Agent skills 路径。
+
+**推荐用 junction（一份真相，不会过期）**：
 
 ```powershell
 New-Item -ItemType Junction -Force -Path "$env:USERPROFILE\.agents\skills\awam-skills" -Target "<本仓绝对路径>\skills\awam-skills"
 ```
 
+**复制副本会过期**（2026-10-07 实际踩到：改了索引仓的 `platforms.md`，执行时用的是
+`~/.workbuddy/skills/awam-skills` 下的旧副本，于是照着过时说明操作，白走一段路）。
+如果确实用了复制，**改完索引仓后立刻同步**：
+
+```bash
+SRC="<索引仓>/skills/awam-skills"; DST="$HOME/.workbuddy/skills/awam-skills"
+for item in SKILL.md references scripts templates; do cp -r "$SRC/$item" "$DST/"; done
+rm -rf "$DST/scripts/__pycache__"
+```
+
+两类副本是否已对齐，`scripts/preflight.py` 会逐目录比对**内容哈希**报出来（它同时看
+`~/.workbuddy/skills/` 与 `~/.agents/skills/` 两处），不用手工 diff。
+
 ## 快速对照
 
 | 步骤 | 创建 | 发布 | 查询 | 平台发布 |
 |------|------|------|------|----------|
+| 跑 `preflight.py` | — | ✅ **发布前必跑** | — | ✅ **发布前必跑** |
 | 本地脚手架 | ✅ | — | — | — |
 | `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — | — | — |
 | push 技能仓内容 | ❌ | ✅ 仅当远程无提交 | — | — |

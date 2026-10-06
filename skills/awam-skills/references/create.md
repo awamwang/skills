@@ -45,12 +45,17 @@
 - [ ] 未 push；未改索引仓 `skills.overrides.json`
 - [ ] `docs/publishing-plan.json` 已登记新技能（`status` 均 `not_started`）；`publishing-plan.md` 已刷新
 - [ ] 未创建 ClawHub / `skill.json` 等市场文件
+- [ ] 跑过 `python skills/awam-skills/scripts/preflight.py --dir <技能仓>`，无 `FAIL`
+      （新仓常见只有一条 WARN：还没 push 过，没有 upstream）
 
 ## 模板注意
 
 - frontmatter 含 `name`、`version`（创建默认 `0.0.1`）、`description`；默认加 `disable-model-invocation: true`（仅用户点名时加载）。若用户要求可被模型自动调用，再去掉该字段。发布到第三方平台（魔搭 / LobeHub）前按 semver 提升 `version`。
 - description 用第三人称、含 WHAT + WHEN；可中文。
 - 正文只写该技能自己的步骤；不要塞通用「如何写好 Skill」教程。
+- [templates/gitignore](../templates/gitignore) 已预置 `storage/`、`env.json`、`index.json`、
+  `_user_meta.json` —— 技能仓是**公开物**，本机数据 / 本机配置要从源头就不进 git
+  （2026-10-07 曾把 `storage/`、`env.json` 打进公开发布包，见 [platforms.md](platforms.md) 的「发布包内容」一节）。
 
 ## 发布规划注意
 

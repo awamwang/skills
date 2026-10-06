@@ -7,6 +7,14 @@
 - 技能仓本地内容已可公开（`SKILL.md` 齐备）
 - 索引仓可写（本仓库根，含 `skills.overrides.json`）
 - `gh` 已登录
+- **先跑发布前检查**（查出「本地领先远程」「不是 git 仓」「缺 `version`」这类本机问题）：
+
+```bash
+python skills/awam-skills/scripts/preflight.py --dir <技能仓>
+```
+
+  有 `❌ FAIL` 就先处理，别带着问题往下走 —— 尤其**本地领先远程**：技能仓推上去之前
+  就更新索引 / 发平台，两边内容会对不上。
 
 确认或推导：
 
@@ -81,6 +89,7 @@ python skills/awam-skills/scripts/plan_skills.py
 
 ## 校验
 
+- [ ] 已跑 `preflight.py` 且无 `FAIL`（本地领先远程 / 不是 git 仓 / 缺 `version` 都已处理）
 - [ ] `awam-skills/<repo_name>` 公开可访问，含最新 `SKILL.md`
 - [ ] Topics 含 `skill`、`skills`
 - [ ] `skills.overrides.json` 已有对应条目与正确 `category`
