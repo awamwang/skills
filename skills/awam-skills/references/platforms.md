@@ -227,11 +227,14 @@ python skills/awam-skills/scripts/publish_doubao.py --dir <技能仓> --mark-don
 **一键脚本（推荐）**：[scripts/publish_clawhub.py](../scripts/publish_clawhub.py) 已封装下列全部踩坑（干净目录、去代理、`--no-input`、发后刷新规划）：
 
 ```bash
-export CLAWHUB_BIN=<clawhub.cmd 或 dist/cli.js 路径>   # 不在 PATH 时必填
+# 本机已把 clawhub 装进 PATH（见下「本机环境备忘」），通常无需设 CLAWHUB_BIN
+# export CLAWHUB_BIN=<clawhub.cmd 或 dist/cli.js 路径>   # 仅当 clawhub 不在 PATH 时兜底
 python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --dry-run   # 预览
 python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓>             # 发布 + 刷新规划
 python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --keep-tmp  # 留临时目录排查
 ```
+
+先用 `clawhub --help` 确认 CLI 可用；不在 PATH 时按「本机环境备忘」的兜底办法处理。
 
 手敲命令时的要点：
 
@@ -300,10 +303,47 @@ python skills/awam-skills/scripts/publish_modelscope.py --dir <仓A>
 | 现象 | 处理 |
 |---|---|
 | 发布脚本报「缺模块 / SDK 不可用」 | 用 **venv 解释器**跑：`~/.workbuddy/binaries/python/envs/default/Scripts/python.exe`；托管 python 没装 `modelscope_hub`，`--via auto` 会**静默回退**到 OpenAPI 通道 |
-| ClawHub 找不到 CLI | 实测落在托管 node 工作区：`~/.workbuddy/binaries/node/workspace/node_modules/clawhub/dist/cli.js`，用 `CLAWHUB_BIN` 指过去 |
+| ClawHub CLI 在哪 | **已装进 PATH**（2026-10-07）：`~/.local/npm-global/clawhub{,.cmd,.ps1}` 三个 shim，`node_modules/clawhub` 用 **junction** 指向托管工作区的包。直接 `clawhub --help` 即可，不必设 `CLAWHUB_BIN`。包本体在 `~/.workbuddy/binaries/node/workspace/node_modules/clawhub`（入口 `bin/clawdhub.js`，`dist/cli.js` 亦可）。需要重装或换机器时按下面「重装 clawhub 到 PATH」重建 |
 | 代理导致 502 | 两个脚本都已内置剥离 `*_PROXY` + `NO_PROXY='*'`；自己手敲命令时照做 |
 | 临时目录越堆越多 | 脚本已改为 `finally` 清理（`--keep-tmp` 可保留）。手工清 `%TEMP%` 时用 **Python `shutil.rmtree`** —— bash 的 `rm -rf` 与 PowerShell 的 `Remove-Item` 在本沙箱会被拦（SIGTERM），Python 不会 |
 | 一堆历史 `modelscope_publish_*` / `clawhub_publish_*` | 上面那条的遗留，按需清；新版本不再产生 |
+
+### 重装 clawhub 到 PATH（换机器 / 包被清掉时）
+
+不装到系统 node，而是复用 `~/.local/npm-global`（本机 npm 全局前缀，**已在 PATH 首位**），
+照 npm 自己的布局放 shim，**不用改 PATH**。涉及两个位置：
+
+| 角色 | 路径 |
+|---|---|
+| 包本体 | `%USERPROFILE%\.workbuddy\binaries\node\workspace\node_modules\clawhub` |
+| 前缀（已在 PATH） | `%USERPROFILE%\.local\npm-global` |
+
+1. **建 junction**（别用副本 —— 副本会过期）。PowerShell（这一步已实测可行）：
+
+```powershell
+New-Item -ItemType Junction `
+  -Path   "$env:USERPROFILE\.local\npm-global\node_modules\clawhub" `
+  -Target "$env:USERPROFILE\.workbuddy\binaries\node\workspace\node_modules\clawhub"
+```
+
+   cmd 等价写法：`cmd /c mklink /J "<前缀>\node_modules\clawhub" "<包本体>"`。
+   不支持 junction 时退而求其次才用 `xcopy /E`（副本，记得日后回来更新）。
+
+2. **放 shim 三件套**到前缀根：`clawhub`（sh）、`clawhub.cmd`、`clawhub.ps1`。
+   内容照抄同目录下已有的 `arkcli{,.cmd,.ps1}`（npm 生成的标准模板），只把入口路径换成
+   `node_modules\clawhub\bin\clawdhub.js`。shim 内是**相对路径**（`%dp0%\node_modules\...`），
+   在前缀根布局下会自动解析到 junction。
+   - `.cmd` / `.ps1` 用 **CRLF**，sh 版用 **LF**；sh 版要 `chmod +x`。
+   - 注意入口文件名是 **`clawdhub.js`**（包 `bin` 字段把 `clawhub` 与 `clawdhub` 都映射到它），
+     照包名拼成 `clawhub.js` 会 404。
+
+3. **验证**：`clawhub --help`（应打印 `🦞 ClawHub CLI v…`）、
+   `python -c "import shutil;print(shutil.which('clawhub'))"`（应指向前缀下的 `clawhub.CMD`）。
+
+> 为什么不用「把 `node_modules/.bin` 整个加进 PATH」：那个目录里还躺着 `json5` /
+> `mime` / `semver` / `yaml` / `plugin-inspector`，会把 5 个无关 CLI 暴露成全局命令
+> （`semver` / `yaml` 这类名字容易和别的工具撞）；放一个 shim 进已有的前缀目录更干净，
+> 也和本机 `arkcli` / `devecocli` 的放法一致。
 
 ## 发布后同步规划
 
