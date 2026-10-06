@@ -147,9 +147,9 @@
       "tier": "t3",
       "repo": "awam-skills/awam-todo-skill",
       "summary": "个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板",
-      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
-      "notes": "存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚），发布到平台前剩余需泛化的是 Windows 路径风格与编辑器探测表的平台分支"
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "publish", "agentpowers": "skip" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "done", "doubao": "not_started", "clawhub": "done", "agentpowers": "skip" },
+      "notes": "存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚）。2026-10-07 首次发布时打包器把 storage/、env.json、index.json 一起发上了魔搭，已修复为「只发 git 跟踪文件」（scripts/public_files.py）并替换线上内容、下载复核清除；豆包导入包已按新规则重新生成。lobehub 需先在 LobeHub 网页「提交仓库」才能 claim（CLI 无法代做）"
     }
   }
 }
