@@ -30,6 +30,9 @@ API = "https://api.github.com"
 ORG = "awam-skills"
 DEFAULT_LOCAL_AWAM = Path.home() / ".agents" / "skills" / "awam"
 
+# HTTP 超时（秒）：避免网络挂死时调用方一直等
+HTTP_TIMEOUT = 30
+
 # 索引仓根的标记文件（都在 ⇒ 认定是索引仓）
 INDEX_MARKERS = ("skills.overrides.json", "README.md")
 
@@ -117,7 +120,7 @@ def resolve_token() -> str | None:
         return None
 
 
-def gh_request(path: str, token: str | None) -> object:
+def gh_request(path: str, token: str | None, timeout: int = HTTP_TIMEOUT) -> object:
     url = path if path.startswith("http") else f"{API}{path}"
     headers = {
         "Accept": "application/vnd.github+json",
@@ -128,15 +131,17 @@ def gh_request(path: str, token: str | None) -> object:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read().decode("utf-8")
             return json.loads(body) if body else None
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"GitHub API {e.code} for {url}: {detail}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"GitHub API 网络失败 {url}（{timeout}s 超时）：{e}") from e
 
 
-def gh_paginate(path: str, token: str | None) -> list:
+def gh_paginate(path: str, token: str | None, timeout: int = HTTP_TIMEOUT) -> list:
     items: list = []
     next_url: str | None = path if path.startswith("http") else f"{API}{path}"
     while next_url:
@@ -149,7 +154,8 @@ def gh_paginate(path: str, token: str | None) -> list:
         if token:
             headers["Authorization"] = f"Bearer {token}"
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req) as resp:
+        # 每页独立计超时：分页多时也不会因累计耗时而误杀
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             page = json.loads(resp.read().decode("utf-8"))
             if isinstance(page, list):
                 items.extend(page)

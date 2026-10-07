@@ -71,6 +71,31 @@ def cleanup_tmp(keep: bool = False) -> None:
     log(f"  已清理临时目录 {len(_TMP_DIRS)} 个")
 
 
+def _looks_like_clawhub(target: Path) -> tuple[bool, str]:
+    """校验 CLAWHUB_BIN 指向的确实是 clawhub CLI。
+
+    环境变量可以来自 `.env` / shell 配置 / 上层进程注入，**不能无条件信任**——
+    否则被污染时会执行任意二进制。这里做三重确认（满足其一即可）：
+    1. 文件名以 clawhub 开头（`clawhub` / `clawhub.cmd` / `clawhub.exe`）；
+    2. 位于 npm / node 的 bin 或 node_modules 路径下，且路径中含 `clawhub` 段
+       （覆盖包的真实入口 `bin/clawdhub.js`）；
+    3. `dist/cli.js` / `dist/index.js` 这类入口（父目录名含 clawhub）。
+    返回 (是否通过, 拒绝原因)。
+    """
+    name = target.name.lower()
+    if name.startswith("clawhub"):
+        return True, ""
+    # 入口形如 .../node_modules/clawhub/bin/clawdhub.js —— 目录链里含 clawhub 段即可
+    parts_lower = [seg.lower() for seg in target.parts]
+    if any(seg.startswith("clawhub") for seg in parts_lower):
+        return True, ""
+    return False, (
+        f"CLAWHUB_BIN 指向的名称不像 clawhub CLI：{target.name}。\n"
+        "为防环境变量被污染后执行任意程序，只接受文件名以 `clawhub` 开头，"
+        "或路径中含 `clawhub` 目录段（如 node_modules/clawhub/bin/clawdhub.js）。"
+    )
+
+
 def find_clawhub() -> list[str]:
     """定位 clawhub CLI，返回可直接 subprocess 执行的命令前缀。
 
@@ -83,11 +108,17 @@ def find_clawhub() -> list[str]:
         target = Path(env_bin)
         if not target.exists():
             raise SystemExit(f"CLAWHUB_BIN 指向的文件不存在：{env_bin}")
+        ok, why = _looks_like_clawhub(target)
+        if not ok:
+            raise SystemExit(why)
+        target = target.resolve()
         if target.suffix == ".js":
             node = shutil.which("node")
             if not node:
                 raise SystemExit("CLAWHUB_BIN 是 .js 但找不到 node")
             return [node, str(target)]
+        if os.name != "nt" and not os.access(target, os.X_OK):
+            raise SystemExit(f"CLAWHUB_BIN 指向的文件不可执行：{target}")
         return [str(target)]
 
     for name in ("clawhub", "clawhub.cmd", "clawhub.exe"):

@@ -124,6 +124,43 @@ def build_zip(skill_dir: Path, zip_path: Path) -> tuple[int, int]:
     return n, zip_path.stat().st_size
 
 
+def sanitize_body(raw: str, limit: int = 800) -> str:
+    """响应体脱敏后截断，供报错打印。
+
+    服务端在 4xx / 5xx 时可能回显请求头（`Authorization` / `Cookie`）或把上传
+    boundary、token 片段带进错误详情 —— 直接 `raw[:800]` 打日志等于二次泄露凭据。
+    这里先屏蔽常见凭据模式，再截断。
+    """
+    if not raw:
+        return ""
+    text = raw
+    # 顺序很关键：先处理「带前缀的裸凭据」，再处理「键: 值」，最后兜 URL query。
+    # 反过来做的话，`Authorization: Bearer ghp_xxx` 会被键规则整段吃掉，只剩 `ghp_` 残片。
+
+    # 1) 凭据键的值（JSON / header 风格）。值里若含 scheme（Bearer xxx），一并替换。
+    #    `Authorization` 特判：连 scheme 一起吃掉，避免残留 `Bearer ` / `ghp_` 之类碎片。
+    text = re.sub(
+        r'(?i)("?(?:authorization)"?\s*[:=]\s*)("?)[^"\r\n,;}]*(\2)',
+        lambda m: m.group(1) + m.group(2) + "<已隐去>" + m.group(3),
+        text,
+    )
+    text = re.sub(
+        r'(?i)("?(?:token|api[_-]?key|access[_-]?token|sdk[_-]?token'
+        r'|cookie|set-cookie|m_session_id|modelscope_session)"?\s*[:=]\s*)'
+        r'("?)([^"\s,;}\]]+)(\2)',
+        lambda m: m.group(1) + m.group(2) + "<已隐去>" + m.group(4),
+        text,
+    )
+    # 2) 常见 token 字面量（魔搭 ms_ / GitHub ghp_ / OpenAI sk- 等）
+    text = re.sub(r"\b(ms_|ghp_|gho_|ghs_|github_pat_|sk-)[A-Za-z0-9_-]{4,}",
+                  r"\1<已隐去>", text)
+    # 3) 裸 Bearer / Basic 凭据（含 JWT 等无前缀 token）
+    text = re.sub(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]{8,}", r"\1 <已隐去>", text)
+    # 4) URL query 里的 token
+    text = re.sub(r"(?i)([?&](?:token|access_token|key)=)[^&\s]+", r"\1<已隐去>", text)
+    return text[:limit]
+
+
 def http_json(url: str, token: str, data: bytes | None = None,
               headers: dict | None = None, method: str | None = None,
               timeout: int = 120) -> dict:
@@ -137,16 +174,17 @@ def http_json(url: str, token: str, data: bytes | None = None,
             raw = resp.read().decode("utf-8", "replace")
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", "replace")
+        safe = sanitize_body(raw, 800)
         if e.code == 401:
             raise SystemExit(
-                f"HTTP 401 鉴权失败 {url}\n{raw[:400]}\n\n"
+                f"HTTP 401 鉴权失败 {url}\n{safe[:400]}\n\n"
                 "魔搭 OpenAPI 只认「API Key」（魔搭个人中心 → Access Token / API Key，"
                 "通常为 ms_ 开头的字符串），**SDK 令牌（UUID 格式）不能用于 OpenAPI**。\n"
                 "若凭据文件里填的是 SDK token，请把 API Key 写入 api_key 字段：\n"
                 f"  {creds.candidate_paths(PLATFORM)[0]}\n"
                 '  {"owner": "<用户名>", "api_key": "ms_xxx...", "sdk_token": "<保留供 SDK 用>"}'
             )
-        raise SystemExit(f"HTTP {e.code} {url}\n{raw[:800]}")
+        raise SystemExit(f"HTTP {e.code} {url}\n{safe}")
     except urllib.error.URLError as e:
         raise SystemExit(f"网络失败 {url}：{e}")
     if not raw.strip():
@@ -154,7 +192,7 @@ def http_json(url: str, token: str, data: bytes | None = None,
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        raise SystemExit(f"响应不是 JSON：{raw[:300]}")
+        raise SystemExit(f"响应不是 JSON：{sanitize_body(raw, 300)}")
 
 
 def multipart_upload(url: str, token: str, file_path: Path, timeout: int = 300) -> dict:
