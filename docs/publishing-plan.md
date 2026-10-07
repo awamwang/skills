@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-07 00:00
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-08 00:00
 
 ## 平台
 
@@ -36,7 +36,7 @@
 | `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — | ○ |
 | `wiz-migration` | 需改造 | ✅ | — | — | — | — | — | — |
 | `stock-hots-skill` | 需改造 | ○ | ○ | ○ | ○ | — | — | ○ |
-| `awam-todo-skill` | 需改造 | ✅ | ○ | ✅ | ○ | ✅ | — | ✅ |
+| `awam-todo-skill` | 需改造 | ✅ | ✅ | ✅ | ○ | ✅ | — | ✅ |
 
 ## 明细
 
@@ -204,12 +204,12 @@
 
 - 仓库：`awam-skills/awam-todo-skill`
 - 简介：个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板
-- 规划：存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚）。2026-10-07 首次发布时打包器把 storage/、env.json、index.json 一起发上了魔搭，已修复为「只发 git 跟踪文件」（scripts/public_files.py）并替换线上内容、下载复核清除；豆包导入包已按新规则重新生成。lobehub 需先在 LobeHub 网页「提交仓库」才能 claim（CLI 无法代做）
+- 规划：存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚）。2026-10-07 首次发布时打包器把 storage/、env.json、index.json 一起发上了魔搭，已修复为「只发 git 跟踪文件」（scripts/public_files.py）并替换线上内容、下载复核清除；豆包导入包已按新规则重新生成。lobehub 已于 2026-10-08 在网页完成「提交仓库」claim（CLI 无法代做，手动完成）
 
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
 | GitHub（基础层） | 推荐发布 | ✅ 已发布 |
-| LobeHub | 推荐发布 | ○ 未发布 |
+| LobeHub | 推荐发布 | ✅ 已发布 |
 | 魔搭 ModelScope | 推荐发布 | ✅ 已发布 |
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 推荐发布 | ✅ 已发布 |
