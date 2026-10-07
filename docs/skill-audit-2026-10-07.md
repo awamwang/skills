@@ -144,27 +144,32 @@
 
 ---
 
-## 🧠 结构性优化（非安全，4 项）
+## 🧠 结构性优化（非安全，5 项）
 
 ### A. 集中超时常量
 - 各脚本 `subprocess.run` 的 timeout 散落（60/120/300/600 不等），建议抽到 `scripts/constants.py`。
-- **状态**：☐ pending
+- **修复**：新增 `scripts/constants.py`，按语义收拢为 `GIT_FAST/GIT_OP/GIT_ARCHIVE/TAR_EXTRACT/CLI_WHOAMI/CLI_INSPECT/CLI_VERIFY/CLI_PUBLISH/CLI_RUN_DEFAULT/PLAN_SCRIPT`。`credentials`/`preflight`/`public_files`/`publish_clawhub`/`publish_doubao`/`publish_modelscope` 共 6 个文件的散落数字全部改引用；数值与原实现一致，纯迁移。query_skills 的 `HTTP_TIMEOUT=30` 是 urlopen 语义、未纳入。
+- **状态**：✅ done（2026-10-07）
 
 ### B. dry-run 通道自检统一
-- `publish_modelscope.py:155-169` 已实现 `check_channel()`，`publish_clawhub.py` 可加同款（自动检测 CLI 是否在 PATH / 是否登录态）。
-- **状态**：☐ pending
+- `publish_modelscope.py` 已实现 `check_channel()`，`publish_clawhub.py` 可加同款（自动检测 CLI 是否在 PATH / 是否登录态）。
+- **修复**：`publish_clawhub.py` 新增 `check_channel(clawhub, env)`，dry-run 时探测 CLI 就绪 + `whoami` 登录态；与 modelscope 对齐。实测输出「CLI 就绪：…clawhub.cmd ｜ 登录态：awamwang」。
+- **状态**：✅ done（2026-10-07）
 
 ### C. preflight check
 - 发布前自动跑 `query_skills.py`，确认技能已进 `awam-skills` 组织 + 已在 `skills.overrides.json`，否则中止发布。
-- **状态**：☐ pending
+- **修复**：在 `preflight.py` 新增 `check_index_registration()`（组织归属已由 #13 source_guard + `check_git` 覆盖，本项补「是否已登记 overrides」）。设计为 **WARN 而非 FAIL**——首次发布前本就该补登记，硬阻断会卡住正常首发；未登记时 WARN 提示补 overrides。实测：`ssh-deploy-skill` PASS「已在 overrides 登记」；索引仓自带技能 PASS「无需登记」。
+- **状态**：✅ done（2026-10-07，warn 级）
 
 ### D. setup_env.py 默认强 venv 隔离
 - 当前直接 `pip install`，污染用户 PYTHONPATH（虽 SKILL 说幂等）。建议默认建 `.venv` 在索引仓 `tools/` 下，`--check` 不创建。
-- **状态**：☐ pending
+- **修复**：默认装到 `tools/.venv`（新增 `_ensure_venv`/`_in_venv`/`missing_in`），已处 venv 时自动复用当前环境不再嵌套；`--check` 只检测当前解释器不创建；`--no-venv` 逃生阀。检测改为在**目标解释器**里跑（`missing_in`，用子进程 + JSON 探测脚本），避免「当前进程装的是全局包、检测结果错位」。索引仓根 `.gitignore` 补 `tools/.venv/`。实测：`--check` exit 1（缺失）、`missing_in` 正确报 13 项缺失。
+- **状态**：✅ done（2026-10-07）
 
 ### E. 凭据加载时打印文件 mode / owner 警告
 - 与 #16 互补，POSIX 下打印 owner uid 与 mode 帮助快速定位配置失误。
-- **状态**：☐ pending
+- **修复**：`_check_file_perms()` 在 mode 过宽告警基础上，补 owner uid 校验——uid 非当前 uid 时告警「属主异常」。仅 POSIX；Windows 静默跳过（实测通过）。
+- **状态**：✅ done（2026-10-07）
 
 ---
 
@@ -173,7 +178,6 @@
 1. **第一批（建议立即修）**：P1 全部 6 项——凭据脱敏 + 超时 + 路径校验 + 文档修正 + gitignore 兜底。改动小、风险高、收益最大。
 2. **第二批（下一次发布窗口）**：P2 的 #7（白名单打包）、#8（敏感串扫描）、#11（错误处理补齐）、#12（仓库根 gitignore）、#9（plan_store 对象级重构）。
 3. **第三批（质量收口）**：P3 6 项 + 结构性 A/B/C/D/E 按需排期。
-
 ---
 
 ## 变更追溯
@@ -186,3 +190,4 @@
 | 2026-10-07 | 修复 | P2 #7 #8 #10 #11 #12 + P3 #18 | 5 项 P2 落地 + 顺带完成 P3 #18。新增 `scripts/preflight_secrets.py`、`skills/awam-skills/.gitignore`；改 `public_files.py`（白名单 opt-in）、`setup_env.py`（mirror 校验）、`publish_doubao.py`（refresh_view）、三发布脚本（接入敏感串扫描 + `--skip-secret-scan`）、`plan_skills.py`（updated 校验）。已验证：10 脚本 `py_compile` 通过；mirror 校验 6 例、updated 6 例、扫描器拦截/豁免、白名单开关 全部单测通过；三个发布脚本 `--dry-run` + `preflight_secrets.py` 端到端跑通。**#9（plan_store 重构）本轮未动**，单独评估 |
 | 2026-10-07 | 重构 | P2 #9 | `plan_store.py` 改为对象级 + 块级重写：dict 层改值（去正则）、只重写 `status` 一行、原子写。逐字节保排版约束经用户确认放弃（展示清晰即可、风格可统一）。已验证：6 边界用例 + 三发布脚本 `update_plan` 集成全通过，真文件改动 1 行、行数守恒、幂等 |
 | 2026-10-07 | 修复 | P3 #13 #14 #15 #17 | 4 项 P3 收口。① #13 `credentials.source_guard` + `git_remote_repo`，受信来源 `awam-skills/`+`awamwang/`（实测 wiz-migration 走个人仓，只认组织会误伤），三脚本打包前校验 + `--allow-foreign-repo` 逃生阀；② #14 `query_skills` JSON 脱敏（去 `\\?\`、home→`~/`、盘符绝对路径→`G:/…/末段`），markdown 保留；③ #15 `credentials.show` + `python -m credentials`，clawhub/doubao 补齐 `--show-credentials`，三脚本 `--dir` 改非必填；④ #17 文档 5 处 market-cli 锁 `@0.0.41`。已验证：11 脚本 py_compile；source_guard 真实来源/陌生仓/非 git 三态、mask 多态、三脚本 show-credentials、doubao 打包 + clawhub dry-run、query_skills JSON 端到端全通过 |
+| 2026-10-07 | 修复 | 结构性 A–E | 5 项结构性优化收口。① A 新增 `constants.py` 收拢超时（6 文件散落数字改引用，值不变）；② B `publish_clawhub` 补 `check_channel`（CLI 就绪 + 登录态）；③ C `preflight.py` 新增 `check_index_registration`（warn 级，首次发布不硬阻断）；④ D `setup_env.py` 默认建 `tools/.venv` 隔离 + 目标解释器内检测（`missing_in`）+ `.gitignore` 补 `tools/.venv/`；⑤ E `_check_file_perms` 补 owner uid 告警。已验证：12 脚本 py_compile；clawhub dry-run 通道自检、modelscope dry-run、doubao 打包、preflight 完整（含 C 检查）、setup_env --check exit 1、missing_in 13 项缺失、E Windows 静默 全通过 |
