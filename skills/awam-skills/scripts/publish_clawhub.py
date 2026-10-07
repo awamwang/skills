@@ -31,6 +31,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials as creds  # noqa: E402  （凭据查找 + 来源校验：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集判定：见 public_files.py）
@@ -39,6 +40,7 @@ import public_files  # noqa: E402  （公开文件集判定：见 public_files.p
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
+PLATFORM = "clawhub"
 
 # 发布目录一律由 public_files.py 判定（git archive 或公开文件集）；
 # 不再维护「排除表」—— 本地那份 EXCLUDE_DIRS 只跳过工程目录，漏掉 storage/ env.json，
@@ -162,22 +164,6 @@ def read_frontmatter_version(skill_dir: Path) -> str | None:
     return match.group(1).strip() if match else None
 
 
-def git_remote_repo(skill_dir: Path) -> str | None:
-    """从 origin 远端解析 owner/repo，如 awam-skills/quicker-connector。"""
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(skill_dir), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=20,
-        )
-        url = out.stdout.strip()
-    except Exception:
-        return None
-    if not url:
-        return None
-    match = re.search(r"github\.com[:/](.+?)(?:\.git)?$", url)
-    return match.group(1) if match else None
-
-
 def git_commit(skill_dir: Path) -> str | None:
     try:
         out = subprocess.run(
@@ -278,15 +264,24 @@ def refresh_view() -> None:
 
 
 def _run(args) -> int:
+    if not args.dir:
+        raise SystemExit("需要 --dir 指定技能仓本地路径（含 SKILL.md）")
     skill_dir = Path(args.dir).expanduser().resolve()
     if not skill_dir.is_dir():
         raise SystemExit(f"技能目录不存在：{skill_dir}")
+
+    warn = creds.source_guard(skill_dir, allow_any=args.allow_foreign_repo)
+    if warn:
+        raise SystemExit(
+            f"⛔ 发布来源校验未通过：{warn}\n"
+            f"  待发布目录：{skill_dir}"
+        )
 
     slug = args.slug or skill_dir.name
     version = args.version or read_frontmatter_version(skill_dir)
     if not version:
         raise SystemExit("读不到版本号，请用 --version 显式指定")
-    repo = git_remote_repo(skill_dir)
+    repo = creds.git_remote_repo(skill_dir)
     commit = git_commit(skill_dir)
 
     log(f"技能：{slug}@{version}" + (f"  （{repo} @ {commit}）" if repo else ""))
@@ -366,7 +361,7 @@ def _run(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="发布技能到 ClawHub 并刷新发布规划")
-    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
+    parser.add_argument("--dir", help="技能仓本地路径（含 SKILL.md）")
     parser.add_argument("--slug", help="ClawHub slug，默认取目录名")
     parser.add_argument("--name", help="展示名，默认取 slug")
     parser.add_argument("--version", help="版本号，默认读 SKILL.md frontmatter")
@@ -380,7 +375,14 @@ def main() -> int:
                         help="保留临时发布目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
     parser.add_argument("--skip-secret-scan", action="store_true",
                         help="跳过发布前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
+    parser.add_argument("--allow-foreign-repo", action="store_true",
+                        help="跳过来源校验（默认要求 origin 属于 awam-skills/ 组织）")
+    parser.add_argument("--show-credentials", action="store_true",
+                        help="只打印凭据来源（脱敏）后退出，用于排查")
     args = parser.parse_args()
+
+    if args.show_credentials:
+        return creds.show(PLATFORM)
 
     try:
         return _run(args)

@@ -21,6 +21,14 @@
 - 平台专属：{"owner": "...", "sdk_token": "...", "api_key": "..."}
 - 统一文件：{"platforms": {"modelscope": {"owner": "...", "token": "..."}}}
 token 字段按 token > api_key > sdk_token > access_token 顺序取第一个非空值。
+
+统一排查入口（三发布脚本的 `--show-credentials` 都委托到这里）：
+
+    python -m credentials <platform>          # 来源 + 脱敏值
+    python -m credentials <platform> --paths  # 只列候选位置
+
+同时提供 `source_guard()` —— 发布前校验待发布目录的 git origin 是否属于受信来源
+（`awam-skills/` 组织或 `awamwang/` 个人仓），防止误把陌生仓发到组织平台。
 """
 
 from __future__ import annotations
@@ -173,12 +181,6 @@ def load(platform: str, explicit_file: str | None = None) -> tuple[dict, str]:
     return {}, "未找到"
 
 
-def describe(platform: str) -> str:
-    """给报错信息用的：列出所有候选位置，方便用户一次性补齐。"""
-    lines = [f"  {i + 1}. {p}" for i, p in enumerate(candidate_paths(platform))]
-    return "\n".join(lines)
-
-
 def mask(token: str) -> str:
     """脱敏显示：只留前 4 + 后 4 位与长度。
 
@@ -192,3 +194,97 @@ def mask(token: str) -> str:
     if n < 12:
         return f"…({n} 位，已隐去)"
     return f"{token[:4]}…{token[-4:]}({n} 位)"
+
+
+def show(platform: str, explicit_file: str | None = None) -> int:
+    """打印某平台的凭据来源与脱敏值（供各发布脚本 `--show-credentials` 统一调用）。
+
+    返回 0 表示拿到了 token，1 表示没有。**绝不打印明文 token**。
+    """
+    cred, src = load(platform, explicit_file)
+    print(f"平台：{platform}")
+    print(f"凭据来源：{src}")
+    print(f"  owner = {cred.get('owner') or '(空)'}")
+    print(f"  token = {mask(cred.get('token', ''))}")
+    return 0 if cred.get("token") else 1
+
+
+# 允许发布的 GitHub 组织/账号前缀；发布前用它校验 --dir 来源，防止误发个人仓。
+# 实测两类合法来源：`awam-skills/`（技能组织）与 `awamwang/`（个人仓，如 wiz-migration、
+# 以及索引仓自身）。不在此列的前缀将被 source_guard 拦截。
+TRUSTED_ORG_PREFIXES = ("awam-skills/", "awamwang/")
+
+
+def git_remote_repo(skill_dir: Path) -> str | None:
+    """从 origin 远端解析 owner/repo（如 `awam-skills/quicker-connector`）。
+
+    非 GitHub 远端 / 无 origin / 无 git 时返回 None。
+    """
+    import re
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(skill_dir), "remote", "get-url", "origin"],
+            capture_output=True, text=True, timeout=20,
+        )
+        url = out.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if not url:
+        return None
+    match = re.search(r"github\.com[:/](.+?)(?:\.git)?$", url)
+    return match.group(1) if match else None
+
+
+def source_guard(skill_dir: Path, allow_any: bool = False) -> str | None:
+    """校验待发布目录的 git 来源是否属于受信组织。
+
+    返回 `None` 表示通过；否则返回一句人类可读的警告文本（调用方决定是中止还是仅提示）。
+    `allow_any=True`（对应 `--allow-foreign-repo`）时直接放行，仅回显实际来源。
+    """
+    repo = git_remote_repo(skill_dir)
+    if allow_any:
+        return None
+    if repo is None:
+        return (
+            f"无法从 {skill_dir} 的 git origin 解析出 GitHub 仓库；"
+            f"若确认要发布该目录，请加 --allow-foreign-repo"
+        )
+    if not repo.startswith(TRUSTED_ORG_PREFIXES):
+        trusted = "、".join(p.rstrip("/") for p in TRUSTED_ORG_PREFIXES)
+        return (
+            f"待发布目录的 origin 是 `{repo}`，不属于受信来源（{trusted}）；"
+            f"误发他人/陌生仓会污染组织平台。确认无误请加 --allow-foreign-repo"
+        )
+    return None
+
+
+def describe(platform: str) -> str:
+    """给报错信息用的：列出所有候选位置，方便用户一次性补齐。"""
+    lines = [f"  {i + 1}. {p}" for i, p in enumerate(candidate_paths(platform))]
+    return "\n".join(lines)
+
+
+def _main(argv: list[str] | None = None) -> int:
+    """`python -m credentials <platform> [--file <path>]` 的统一凭据排查入口。"""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="credentials",
+        description="查看某平台的凭据来源与脱敏值（不打印明文）",
+    )
+    parser.add_argument("platform", help="平台名，如 modelscope / clawhub / doubao")
+    parser.add_argument("--file", dest="file", default=None, help="显式指定凭据文件")
+    parser.add_argument("--paths", action="store_true", help="只列出候选凭据位置")
+    args = parser.parse_args(argv)
+
+    if args.paths:
+        print(f"平台 {args.platform} 的候选凭据位置（按优先级）：")
+        print(describe(args.platform))
+        return 0
+    return show(args.platform, args.file)
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())

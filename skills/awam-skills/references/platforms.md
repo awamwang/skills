@@ -81,7 +81,7 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 
 | 平台 | 区域 | 发布通道 | 前置 | 适合技能 |
 |------|------|----------|------|----------|
-| **LobeHub** | 国际 | SKILL.md bundle + CLI `npx -y @lobehub/market-cli` | 账号 + 网页提交仓库 | 跨 agent 通用型（ssh-deploy、awam-git、github-organize） |
+| **LobeHub** | 国际 | SKILL.md bundle + CLI `npx -y @lobehub/market-cli@0.0.41` | 账号 + 网页提交仓库 | 跨 agent 通用型（ssh-deploy、awam-git、github-organize） |
 | **魔搭 ModelScope** | 国内 | [publish_modelscope.py](../scripts/publish_modelscope.py)（zip→file_id→创建） | 账号 + `MODELSCOPE_API_TOKEN` | 通用与运维技能均合适 |
 | **豆包技能中心** | 国内 | [publish_doubao.py](../scripts/publish_doubao.py) 打包 + 客户端导入 | 豆包客户端 | 个人工作流与通用技能；成本最低 |
 | **ClawHub** | 国际 | [publish_clawhub.py](../scripts/publish_clawhub.py)（封装 `clawhub` CLI） | npm 包 `clawhub` + 设备流登录 | OpenClaw 生态技能（quicker-connector） |
@@ -120,9 +120,11 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 **identifier 必须是 `owner-repo` 格式**（GitHub `owner/repo` 把 `/` 换成 `-`，如 `awam-skills-ssh-deploy-skill`），**不是**裸 repo 名——裸名和错误 owner 都会导致 claim "Skill not found"。
 
 1. **前置：网页提交仓库（必须，CLI 无法代做）。** 技能仓库公开后，用户打开 LobeHub 创作者主页（官方指引 `lobehub.com/zh/docs/usage/community/become-a-creator`）→「技能」区域 →「提交仓库」→ 选择该 GitHub 仓库。提交后技能进入 marketplace，CLI 才能认领。
-2. 连接 GitHub：`npx -y @lobehub/market-cli github connect`；`github status` 应显示 `✓ GitHub connected`。
-3. 认领：`npx -y @lobehub/market-cli skill claim <owner-repo>`。已拥有时返回 "You already own this skill"（正常，跳过即可）。
-4. 发布：`npx -y @lobehub/market-cli skill publish --dir <技能目录> --identifier <owner-repo>`。
+2. 连接 GitHub：`npx -y @lobehub/market-cli@0.0.41 github connect`；`github status` 应显示 `✓ GitHub connected`。
+3. 认领：`npx -y @lobehub/market-cli@0.0.41 skill claim <owner-repo>`。已拥有时返回 "You already own this skill"（正常，跳过即可）。
+4. 发布：`npx -y @lobehub/market-cli@0.0.41 skill publish --dir <技能目录> --identifier <owner-repo>`。
+
+> **版本锁定**：`@lobehub/market-cli` 一律固定 `@0.0.41`，不拉 latest —— npm 包被劫持/投毒时会直接执行恶意代码。升级前先 `npm view @lobehub/market-cli version` 核对 integrity 再改。
 
 **踩坑（market-cli 0.0.41）：** `skill publish` 会复用 `skill list` 的共享请求头，把 `Content-Type` 设成 `application/json`（而非 `multipart/form-data`），服务端报 `Failed to parse form data`。**绕过方式**——用 curl 手动发送 multipart：
 
@@ -303,7 +305,7 @@ python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --keep-tm
 |---|---|---|
 | 魔搭 | `api.download_repo("<owner>/<name>", repo_type=RepoType.SKILL, local_dir=…)` | 文件清单里无 `storage/`、`env.json`、`index.json`、`*.log` |
 | ClawHub | `clawhub inspect <slug>` / `clawhub skill verify <slug>` | `Latest` 版本与文件数；`verify` 的 `ok:false` 不必然是发布失败（见 ClawHub 小节） |
-| LobeHub | `npx -y @lobehub/market-cli skill list` | status 为 `published` |
+| LobeHub | `npx -y @lobehub/market-cli@0.0.41 skill list` | status 为 `published` |
 | 豆包 | 客户端「我的技能」里看条目 | 无 API，只能人工看；导入成功后回跑 `--mark-done` |
 
 ## 批量发布

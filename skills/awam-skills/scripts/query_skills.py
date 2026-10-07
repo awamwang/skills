@@ -572,6 +572,56 @@ def render_lists(org: list[SkillEntry], index: list[SkillEntry], local: list[Ski
     return "\n".join(lines)
 
 
+def _mask_host_path(value: str, home: str) -> str:
+    """脱敏本机绝对路径，避免 JSON 输出泄露主机目录结构。
+
+    规则（按序）：
+    1. 去掉 Windows 长路径前缀 `\\\\?\\`（junction target 常见）；
+    2. home 目录内 → `~/...`；
+    3. 其它盘符绝对路径（如 `G:\\Projects\\19AI\\...`）→ `G:/…/<末段>`（隐藏中间层级，只留盘符+末段）；
+    4. 其余（URL、相对路径）原样返回。
+    """
+    if not value:
+        return value
+    v = value
+    if v.startswith("\\\\?\\"):
+        v = v[4:]
+    norm = v.replace("\\", "/")
+    home_norm = home.replace("\\", "/").rstrip("/")
+    if norm.lower().startswith(home_norm.lower() + "/"):
+        return "~/" + norm[len(home_norm) + 1:]
+    m = re.match(r"^([A-Za-z]):/(.+)$", norm)
+    if m:
+        drive = m.group(1)
+        tail = m.group(2).rstrip("/").rsplit("/", 1)[-1]
+        return f"{drive}:/…/{tail}"
+    return value
+
+
+def mask_json_payload(payload: dict, home: str) -> dict:
+    """对 JSON 输出的主机路径字段做脱敏：meta 根目录、local 的 path/target、compare 的 local_path。"""
+    meta = payload.get("meta")
+    if isinstance(meta, dict):
+        for k in ("index_root", "local_dir"):
+            if isinstance(meta.get(k), str):
+                meta[k] = _mask_host_path(meta[k], home)
+
+    for item in payload.get("local", []) or []:
+        if not isinstance(item, dict):
+            continue
+        if isinstance(item.get("path_or_url"), str):
+            item["path_or_url"] = _mask_host_path(item["path_or_url"], home)
+        extra = item.get("extra")
+        if isinstance(extra, dict) and isinstance(extra.get("target"), str):
+            extra["target"] = _mask_host_path(extra["target"], home)
+
+    for row in payload.get("compare", []) or []:
+        if isinstance(row, dict) and isinstance(row.get("local_path"), str):
+            row["local_path"] = _mask_host_path(row["local_path"], home)
+
+    return payload
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="查询并对比组织 / 索引仓 / 本机 awam 技能")
     parser.add_argument(
@@ -670,6 +720,7 @@ def main(argv: list[str] | None = None) -> int:
             payload = {"meta": meta, "local": payload["local"]}
         elif args.only == "compare":
             payload = {"meta": meta, "compare": compare}
+        payload = mask_json_payload(payload, str(Path.home()))
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         if errors:

@@ -107,34 +107,34 @@
 ## 🟢 P3 — 细节优化（6 项）
 
 ### 13. `--dir` 不校验来源
-- **位置**：所有 publish 脚本
+- **位置**：所有 publish 脚本（新增 `credentials.source_guard`）
 - **问题**：未校验传入目录是否 git 仓 / origin 是否指向 `awam-skills` 组织。误传个人仓会发到组织平台。
-- **建议**：发布前断言 `git_remote_repo(skill_dir)` 返回值以 `awam-skills/` 开头。
-- **状态**：☐ pending
+- **修复**：`credentials.py` 新增 `source_guard()` + `git_remote_repo()`（后者从 `publish_clawhub` 抽上来复用）。受信来源为 `awam-skills/` **与** `awamwang/`（实测 `wiz-migration`、索引仓自身走个人仓 `awamwang`，只认组织会误伤合法发布）。三发布脚本在打包前调用，命中即中止并提示 `--allow-foreign-repo` 逃生阀。实测：`awam-skills/*` 与 `awamwang/*` 全部放行，陌生仓 `evil/foo` 与非 git 目录被拦。
+- **状态**：✅ done（2026-10-07）
 
 ### 14. JSON 输出间接泄露主机目录结构
-- **位置**：`scripts/query_skills.py:344-348`（`local_path` / `target` 字段）
-- **问题**：JSON 输出含本机 junction target 路径，可能间接泄露 `G:/Projects/...` 等主机目录结构。
-- **建议**：JSON 模式下对 `target` 做 `~` 替换或脱敏；markdown 模式保留以便调试。
-- **状态**：☐ pending
+- **位置**：`scripts/query_skills.py`（新增 `_mask_host_path` / `mask_json_payload`）
+- **问题**：JSON 输出含本机 junction target 路径（`\\?\G:\Projects\...`），间接泄露主机目录结构。
+- **修复**：仅 JSON 模式脱敏（markdown 保留以便调试）——① 去 `\\?\` 长路径前缀；② home 内 → `~/...`；③ 其它盘符绝对路径 → `G:/…/<末段>`（隐藏中间层级）。覆盖 `meta.index_root/local_dir`、`local[].path_or_url`、`local[].extra.target`、`compare[].local_path`。实测 `\\?\G:\Projects\19AI\skills\awam` → `G:/…/awam`。
+- **状态**：✅ done（2026-10-07）
 
 ### 15. `--show-credentials` 入口分散
-- **位置**：`scripts/publish_modelscope.py` 已有，`publish_clawhub.py` / `publish_doubao.py` 没有
-- **问题**：凭据排查入口不一致。
-- **建议**：抽到 `credentials.py` 提供统一的 `python -m credentials <platform>` 子命令；或三脚本统一加。
-- **状态**：☐ pending
+- **位置**：`credentials.py` 新增 `show()` + `__main__`；三发布脚本统一
+- **问题**：凭据排查入口不一致（只有 modelscope 有）。
+- **修复**：`credentials.py` 提供 `show(platform)` 与 `python -m credentials <platform> [--paths]` 统一入口；clawhub / doubao 补齐 `--show-credentials` 并委托给 `creds.show`。三脚本 `--dir` 改为非必填（`--show-credentials` 不再强制要 `--dir`）。
+- **状态**：✅ done（2026-10-07）
 
 ### 16. 凭据文件权限未校验
-- **位置**：`scripts/credentials.py:load()`
+- **位置**：`scripts/credentials.py`（`_check_file_perms`，P1 阶段随 #6 一并落地）
 - **问题**：POSIX 下凭据文件 mode 若非 0600 不会 warn，组 / 其它用户可读。
-- **建议**：`stat.S_IMODE(p.stat().st_mode)` 不是 0o600 时 warn（仅 POSIX；Windows 跳过）。
-- **状态**：☐ pending
+- **修复**：`_check_file_perms()` —— 仅 POSIX（Windows 跳过），`stat.S_IMODE` 有 0o077 位即告警建议 `chmod 600`；在 `load()` 的显式文件与候选路径两处调用，`_warn_once` 去重。
+- **状态**：✅ done（2026-10-07，随 P1 落地）
 
 ### 17. `npx -y @lobehub/market-cli` 未锁版本
-- **位置**：`references/platforms.md:53-55`
+- **位置**：`references/platforms.md`
 - **问题**：每次拉 latest，npm 投毒（包被劫持）时直接执行恶意代码。
-- **建议**：固定 `@lobehub/market-cli@0.0.41`；或先 `npm view` 校验 integrity 再跑。
-- **状态**：☐ pending
+- **修复**：全部 5 处 `@lobehub/market-cli` 固定为 `@0.0.41`（与文内「踩坑 0.0.41」一致），并加版本锁定说明（升级前先 `npm view ... version` 核对 integrity）。
+- **状态**：✅ done（2026-10-07）
 
 ### 18. `plan_skills.py` 的 `updated` 字段无格式校验
 - **位置**：`scripts/plan_skills.py`（新增 `_normalize_updated`）
@@ -185,3 +185,4 @@
 | 2026-10-07 | 提交 | P1 全部 | 拆两个 commit：`fix(skills): 收紧发布脚本的凭据脱敏与外部命令校验`、`docs(skills): 修正平台凭据示例并补充脱敏与守卫说明`（均未 push） |
 | 2026-10-07 | 修复 | P2 #7 #8 #10 #11 #12 + P3 #18 | 5 项 P2 落地 + 顺带完成 P3 #18。新增 `scripts/preflight_secrets.py`、`skills/awam-skills/.gitignore`；改 `public_files.py`（白名单 opt-in）、`setup_env.py`（mirror 校验）、`publish_doubao.py`（refresh_view）、三发布脚本（接入敏感串扫描 + `--skip-secret-scan`）、`plan_skills.py`（updated 校验）。已验证：10 脚本 `py_compile` 通过；mirror 校验 6 例、updated 6 例、扫描器拦截/豁免、白名单开关 全部单测通过；三个发布脚本 `--dry-run` + `preflight_secrets.py` 端到端跑通。**#9（plan_store 重构）本轮未动**，单独评估 |
 | 2026-10-07 | 重构 | P2 #9 | `plan_store.py` 改为对象级 + 块级重写：dict 层改值（去正则）、只重写 `status` 一行、原子写。逐字节保排版约束经用户确认放弃（展示清晰即可、风格可统一）。已验证：6 边界用例 + 三发布脚本 `update_plan` 集成全通过，真文件改动 1 行、行数守恒、幂等 |
+| 2026-10-07 | 修复 | P3 #13 #14 #15 #17 | 4 项 P3 收口。① #13 `credentials.source_guard` + `git_remote_repo`，受信来源 `awam-skills/`+`awamwang/`（实测 wiz-migration 走个人仓，只认组织会误伤），三脚本打包前校验 + `--allow-foreign-repo` 逃生阀；② #14 `query_skills` JSON 脱敏（去 `\\?\`、home→`~/`、盘符绝对路径→`G:/…/末段`），markdown 保留；③ #15 `credentials.show` + `python -m credentials`，clawhub/doubao 补齐 `--show-credentials`，三脚本 `--dir` 改非必填；④ #17 文档 5 处 market-cli 锁 `@0.0.41`。已验证：11 脚本 py_compile；source_guard 真实来源/陌生仓/非 git 三态、mask 多态、三脚本 show-credentials、doubao 打包 + clawhub dry-run、query_skills JSON 端到端全通过 |

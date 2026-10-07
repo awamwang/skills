@@ -368,15 +368,20 @@ def refresh_view() -> None:
 
 def _run(args) -> int:
     if args.show_credentials:
-        cred, src = creds.load(PLATFORM, args.credentials)
-        log(f"凭据来源：{src}")
-        log(f"  owner = {cred.get('owner') or '(空)'}")
-        log(f"  token = {creds.mask(cred.get('token', ''))}")
-        return 0 if cred.get("token") else 1
+        return creds.show(PLATFORM, args.credentials)
 
+    if not args.dir:
+        raise SystemExit("需要 --dir 指定技能仓本地路径（含 SKILL.md）")
     skill_dir = Path(args.dir).expanduser().resolve()
     if not skill_dir.is_dir():
         raise SystemExit(f"技能目录不存在：{skill_dir}")
+
+    warn = creds.source_guard(skill_dir, allow_any=args.allow_foreign_repo)
+    if warn:
+        raise SystemExit(
+            f"⛔ 发布来源校验未通过：{warn}\n"
+            f"  待发布目录：{skill_dir}"
+        )
 
     fm_name, version, description = read_frontmatter(skill_dir)
     name = args.name or fm_name
@@ -480,7 +485,7 @@ def _run(args) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="发布技能到魔搭 ModelScope")
-    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
+    parser.add_argument("--dir", help="技能仓本地路径（含 SKILL.md）")
     parser.add_argument("--owner", help="魔搭用户名（也可 MODELSCOPE_OWNER）")
     parser.add_argument("--token", help="魔搭 API token（也可 MODELSCOPE_API_TOKEN；不建议写在命令行历史里）")
     parser.add_argument("--credentials", help="凭据 JSON 路径（默认自动查找，见 credentials.py）")
@@ -499,6 +504,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="只打包并校验，不上传")
     parser.add_argument("--skip-secret-scan", action="store_true",
                         help="跳过发布前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
+    parser.add_argument("--allow-foreign-repo", action="store_true",
+                        help="跳过来源校验（默认要求 origin 属于 awam-skills/ 组织）")
     parser.add_argument("--keep-tmp", action="store_true",
                         help="保留临时打包目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
     args = parser.parse_args()

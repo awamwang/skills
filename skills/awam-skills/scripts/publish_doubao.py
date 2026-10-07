@@ -24,6 +24,7 @@ import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials as creds  # noqa: E402  （凭据查找 + 来源校验：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集：见 public_files.py）
@@ -32,6 +33,7 @@ import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
+PLATFORM = "doubao"
 
 TEXT_EXT = {".md", ".py", ".json", ".txt", ".yml", ".yaml", ".cfg", ".toml", ".sh"}
 
@@ -126,18 +128,34 @@ def refresh_view() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="为豆包技能中心准备导入包")
-    parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
+    parser.add_argument("--dir", help="技能仓本地路径（含 SKILL.md）")
     parser.add_argument("--out", help=f"输出 zip 路径，默认 {DEFAULT_OUT_DIR}\\<name>-doubao.zip（仓外）")
     parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按名字反查）")
     parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
     parser.add_argument("--mark-done", action="store_true", help="确认已导入成功后，更新规划并刷新视图")
     parser.add_argument("--skip-secret-scan", action="store_true",
                         help="跳过打包前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
+    parser.add_argument("--allow-foreign-repo", action="store_true",
+                        help="跳过来源校验（默认要求 origin 属于 awam-skills/ 组织）")
+    parser.add_argument("--show-credentials", action="store_true",
+                        help="只打印凭据来源（脱敏）后退出，用于排查")
     args = parser.parse_args()
 
+    if args.show_credentials:
+        return creds.show(PLATFORM)
+
+    if not args.dir:
+        raise SystemExit("需要 --dir 指定技能仓本地路径（含 SKILL.md）")
     skill_dir = Path(args.dir).expanduser().resolve()
     if not skill_dir.is_dir():
         raise SystemExit(f"技能目录不存在：{skill_dir}")
+
+    warn = creds.source_guard(skill_dir, allow_any=args.allow_foreign_repo)
+    if warn:
+        raise SystemExit(
+            f"⛔ 发布来源校验未通过：{warn}\n"
+            f"  待发布目录：{skill_dir}"
+        )
 
     name = read_frontmatter_name(skill_dir)
     out = Path(args.out).expanduser().resolve() if args.out else DEFAULT_OUT_DIR / f"{name}-doubao.zip"
