@@ -25,6 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 
 # skills/awam-skills/scripts → 索引仓根
@@ -52,16 +53,30 @@ def read_frontmatter_name(skill_dir: Path) -> str:
     return m.group(1).strip() if m else skill_dir.name
 
 
-def build_zip(skill_dir: Path, zip_path: Path, top: str) -> tuple[int, int]:
+def build_zip(skill_dir: Path, zip_path: Path, top: str,
+              skip_secret_scan: bool = False) -> tuple[int, int]:
     """打包。只打 `public_files` 判定的公开文件——导入包会被上传到平台，属公开物，
     绝不能把 storage/、env.json、index.json 这类本地私密数据带进去。
-    路径按**打包根**（SKILL.md 所在目录）取，嵌套布局也能得到「顶层文件夹下就是 SKILL.md」。"""
+    路径按**打包根**（SKILL.md 所在目录）取，嵌套布局也能得到「顶层文件夹下就是 SKILL.md」。
+
+    打包前先跑敏感串扫描（`preflight_secrets`）：上传公开平台**不可逆**。
+    """
     files, root, source, excluded, outside = public_files.pack_files(skill_dir)
     log(f"  {public_files.describe(skill_dir)}")
     for rel in excluded:
         log(f"    ⤫ 排除 {rel}")
     if root is None:
         raise SystemExit(f"无法确定打包根：{source}")
+
+    if not skip_secret_scan:
+        problems = preflight_secrets.scan_files(files, root)
+        if problems:
+            raise SystemExit(
+                preflight_secrets.format_problems(problems)
+                + "\n  确需发布请加 --skip-secret-scan（自行承担凭据泄露风险）"
+            )
+        log("  敏感串扫描：✅ 未发现疑似凭据")
+
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in files:
@@ -89,6 +104,26 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
     return True
 
 
+def refresh_view() -> None:
+    """调用 plan_skills.py 刷新人读视图（不手改 md）。
+
+    捕获失败并提示——早先这里 `subprocess.run` 不看 returncode，
+    视图刷新失败时用户以为成功了（与 publish_modelscope 的 refresh_view 对齐）。
+    """
+    try:
+        out = subprocess.run(
+            [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=120
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        log(f"  ⚠ 刷新视图失败（无法执行）：{e}")
+        return
+    if out.returncode == 0:
+        log(f"  视图已刷新：{out.stdout.strip() or 'docs/publishing-plan.md'}")
+    else:
+        detail = (out.stderr or out.stdout or "").strip()
+        log(f"  ⚠ 刷新视图失败（exit={out.returncode}）：{detail}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="为豆包技能中心准备导入包")
     parser.add_argument("--dir", required=True, help="技能仓本地路径（含 SKILL.md）")
@@ -96,6 +131,8 @@ def main() -> int:
     parser.add_argument("--skill", help="publishing-plan.json 里的技能 key（默认按名字反查）")
     parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
     parser.add_argument("--mark-done", action="store_true", help="确认已导入成功后，更新规划并刷新视图")
+    parser.add_argument("--skip-secret-scan", action="store_true",
+                        help="跳过打包前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
     args = parser.parse_args()
 
     skill_dir = Path(args.dir).expanduser().resolve()
@@ -106,7 +143,7 @@ def main() -> int:
     out = Path(args.out).expanduser().resolve() if args.out else DEFAULT_OUT_DIR / f"{name}-doubao.zip"
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    count, size = build_zip(skill_dir, out, name)
+    count, size = build_zip(skill_dir, out, name, skip_secret_scan=args.skip_secret_scan)
     log(f"✅ 导入包已生成：{out}（{count} 个文件，{size/1024:.1f} KB，顶层目录 `{name}/`）")
     log("\n导入步骤（需你在豆包客户端完成，无公开上传 API）：")
     log("  1. 打开豆包电脑版 → 侧边栏「技能·连接器·伙伴」")
@@ -124,8 +161,7 @@ def main() -> int:
                     key = k
                     break
         if key and update_plan(plan_path, key):
-            subprocess.run([sys.executable, str(PLAN_SCRIPT)], timeout=120)
-            log("  视图已刷新")
+            refresh_view()
         else:
             log("  ⚠ 未能定位规划里的技能 key，请用 --skill 指定")
     return 0

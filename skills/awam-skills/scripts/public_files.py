@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -53,6 +54,35 @@ SENSITIVE_NAMES = {
 
 # 后缀级
 SENSITIVE_SUFFIXES = (".log", ".pyc", ".pyo", ".sqlite", ".sqlite3", ".db")
+
+# 白名单顶层目录：设置环境变量 AWAM_PACK_WHITELIST_DIRS 后，只有这些顶层目录
+# （以及打包根下的文件）会被打进发布包。
+# 默认**不启用**——技能仓可自带任意目录（assets/、evals/ 等），一上来就白名单
+# 会误伤这些合法内容；这里提供的是「敏感技能」的加固开关。
+# 启用方式：AWAM_PACK_WHITELIST_DIRS="references,scripts,templates,assets,docs"
+DEFAULT_WHITELIST_DIRS = ("references", "scripts", "templates", "assets", "docs")
+WHITELIST_ENV = "AWAM_PACK_WHITELIST_DIRS"
+
+
+def whitelist_dirs() -> tuple[str, ...] | None:
+    """读取顶层目录白名单；未启用返回 None。
+
+    值 `*` / `all` 表示不启用（与未设置等价），便于临时关闭。
+    """
+    raw = os.environ.get(WHITELIST_ENV, "").strip()
+    if not raw or raw in ("*", "all"):
+        return None
+    return tuple(p.strip().lower() for p in raw.split(",") if p.strip())
+
+
+def _whitelist_blocks(rel: str, root_rel_parts: tuple[str, ...]) -> bool:
+    """白名单启用时，判断该相对路径是否应被排除（打包根之外的顶层目录）。"""
+    parts = Path(rel).parts
+    if len(parts) < 2:
+        # 打包根直属文件（SKILL.md 等）始终保留
+        return False
+    top = parts[0].lower()
+    return top not in root_rel_parts
 
 
 def _is_sensitive(rel: str) -> bool:
@@ -144,16 +174,32 @@ def public_files(skill_dir: Path) -> tuple[list[Path], str, list[str]]:
 
     返回 (文件绝对路径列表, 来源说明, 被排除的相对路径列表)。
     列表按相对路径排序，保证打包结果可复现。
+
+    排除规则叠加两层：敏感名单（始终生效）+ 顶层目录白名单（设置
+    AWAM_PACK_WHITELIST_DIRS 后生效，见 `whitelist_dirs`）。
     """
     skill_dir = Path(skill_dir)
     tracked = _git_tracked(skill_dir)
     excluded: list[str] = []
     selected: list[Path] = []
 
+    wl = whitelist_dirs()
+    wl_parts = wl or ()
+
+    def keep(rel: str) -> bool:
+        """rel 是否保留。"""
+        if _is_sensitive(rel):
+            return False
+        if wl is not None and _whitelist_blocks(rel, wl_parts):
+            return False
+        return True
+
     if tracked is not None:
         source = "git 跟踪清单"
+        if wl is not None:
+            source += f" + 顶层目录白名单({', '.join(wl)})"
         for rel in sorted(tracked):
-            if _is_sensitive(rel):
+            if not keep(rel):
                 excluded.append(rel)
                 continue
             p = skill_dir / rel
@@ -161,11 +207,13 @@ def public_files(skill_dir: Path) -> tuple[list[Path], str, list[str]]:
                 selected.append(p)
     else:
         source = "黑名单遍历（非 git 目录）"
+        if wl is not None:
+            source += f" + 顶层目录白名单({', '.join(wl)})"
         for p in sorted(skill_dir.rglob("*")):
             if not p.is_file():
                 continue
             rel = p.relative_to(skill_dir).as_posix()
-            if _is_sensitive(rel):
+            if not keep(rel):
                 excluded.append(rel)
                 continue
             selected.append(p)

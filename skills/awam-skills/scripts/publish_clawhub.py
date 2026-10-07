@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集判定：见 public_files.py）
 
 # skills/awam-skills/scripts → 索引仓根
@@ -188,7 +189,7 @@ def git_commit(skill_dir: Path) -> str | None:
         return None
 
 
-def export_clean_dir(skill_dir: Path) -> tuple[Path, Path]:
+def export_clean_dir(skill_dir: Path, skip_secret_scan: bool = False) -> tuple[Path, Path]:
     """导出干净发布目录，返回 (发布目录, 临时根目录)。
 
     - 优先 `git archive`（只含跟踪文件）；
@@ -198,6 +199,7 @@ def export_clean_dir(skill_dir: Path) -> tuple[Path, Path]:
       （见 public_files.py 顶部说明），ClawHub 这条只是刚好一直是 git 仓才没触发。
     - 两者都返回**打包根**（SKILL.md 所在目录）：嵌套布局的仓库若把仓库根交给平台，
       ClawHub 会找不到技能根。
+    - 交给平台前跑敏感串扫描（`preflight_secrets`）：上传公开平台**不可逆**。
     """
     tmp = Path(tempfile.mkdtemp(prefix="clawhub_publish_"))
     _TMP_DIRS.append(tmp)
@@ -214,6 +216,8 @@ def export_clean_dir(skill_dir: Path) -> tuple[Path, Path]:
         if root is None:
             raise SystemExit(f"发布目录里找不到 SKILL.md：{note}")
         log(f"  发布目录（git archive，只含跟踪文件）：{root}  [{note}]")
+        if not skip_secret_scan:
+            scan_staging(root)
         return root, tmp
 
     files, root, source, excluded, _outside = public_files.pack_files(skill_dir)
@@ -227,7 +231,21 @@ def export_clean_dir(skill_dir: Path) -> tuple[Path, Path]:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(p, dst)
     log(f"  发布目录（非 git 仓，按公开文件集复制）：{staging}")
+    if not skip_secret_scan:
+        scan_staging(staging)
     return staging, tmp
+
+
+def scan_staging(root: Path) -> None:
+    """扫描发布目录，命中疑似凭据即中止发布。"""
+    files = [p for p in sorted(root.rglob("*")) if p.is_file()]
+    problems = preflight_secrets.scan_files(files, root)
+    if problems:
+        raise SystemExit(
+            preflight_secrets.format_problems(problems)
+            + "\n  确需发布请加 --skip-secret-scan（自行承担凭据泄露风险）"
+        )
+    log("  敏感串扫描：✅ 未发现疑似凭据")
 
 
 def run(cmd: list[str], env: dict, timeout: int = 300) -> subprocess.CompletedProcess:
@@ -286,7 +304,7 @@ def _run(args) -> int:
             )
         log(f"  已登录：{whoami.stdout.strip()}")
 
-    staging, _tmp = export_clean_dir(skill_dir)
+    staging, _tmp = export_clean_dir(skill_dir, skip_secret_scan=args.skip_secret_scan)
 
     cmd = clawhub + ["--no-input", "skill", "publish", str(staging),
            "--slug", slug, "--name", args.name or slug, "--version", version,
@@ -360,6 +378,8 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="只预览，不真正发布")
     parser.add_argument("--keep-tmp", action="store_true",
                         help="保留临时发布目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
+    parser.add_argument("--skip-secret-scan", action="store_true",
+                        help="跳过发布前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
     args = parser.parse_args()
 
     try:

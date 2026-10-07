@@ -48,6 +48,7 @@ PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import credentials as creds  # noqa: E402  （凭据查找：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 
 PLATFORM = "modelscope"
@@ -93,12 +94,15 @@ def read_frontmatter(skill_dir: Path) -> tuple[str, str, str]:
     return pick("name", skill_dir.name), pick("version"), pick("description")
 
 
-def build_zip(skill_dir: Path, zip_path: Path) -> tuple[int, int]:
+def build_zip(skill_dir: Path, zip_path: Path, skip_secret_scan: bool = False) -> tuple[int, int]:
     """打包：根目录恰好 1 个 SKILL.md，文本文件统一 LF。
 
     只打 `public_files` 判定的公开文件——发布包是公开物，绝不能把 storage/、
     env.json、index.json 这类本地私密数据一起传上去。
     路径按**打包根**（SKILL.md 所在目录）取，嵌套布局的仓库也能得到「根下 1 个 SKILL.md」。
+
+    打包前先跑敏感串扫描（`preflight_secrets`）：上传公开平台**不可逆**，
+    宁可在这里中止，也不要把凭据送出去。`skip_secret_scan=True` 时跳过（自担风险）。
     """
     files, root, source, excluded, outside = public_files.pack_files(skill_dir)
     log(f"  {public_files.describe(skill_dir)}")
@@ -106,6 +110,16 @@ def build_zip(skill_dir: Path, zip_path: Path) -> tuple[int, int]:
         log(f"    ⤫ 排除 {rel}")
     if root is None:
         raise SystemExit(f"无法确定打包根：{source}")
+
+    if not skip_secret_scan:
+        problems = preflight_secrets.scan_files(files, root)
+        if problems:
+            raise SystemExit(
+                preflight_secrets.format_problems(problems)
+                + "\n  确需发布请加 --skip-secret-scan（自行承担凭据泄露风险）"
+            )
+        log("  敏感串扫描：✅ 未发现疑似凭据")
+
     n = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for p in files:
@@ -371,7 +385,7 @@ def _run(args) -> int:
     tmp = Path(tempfile.mkdtemp(prefix="modelscope_publish_"))
     _TMP_DIRS.append(tmp)
     zip_path = tmp / f"{name}.zip"
-    count, size = build_zip(skill_dir, zip_path)
+    count, size = build_zip(skill_dir, zip_path, skip_secret_scan=args.skip_secret_scan)
     log(f"  打包完成：{count} 个文件，{size/1024:.1f} KB → {zip_path}")
     if size > MAX_ZIP_BYTES:
         raise SystemExit(f"zip 超过魔搭 5MB 限制（{size/1024:.1f} KB），请先瘦身")
@@ -483,6 +497,8 @@ def main() -> int:
     parser.add_argument("--plan", default=str(DEFAULT_PLAN), help="发布规划 JSON 路径")
     parser.add_argument("--no-plan", action="store_true", help="发布后不更新规划")
     parser.add_argument("--dry-run", action="store_true", help="只打包并校验，不上传")
+    parser.add_argument("--skip-secret-scan", action="store_true",
+                        help="跳过发布前的敏感串扫描（默认开启；跳过即自行承担凭据泄露风险）")
     parser.add_argument("--keep-tmp", action="store_true",
                         help="保留临时打包目录（默认发完即删，避免 %%TEMP%% 越堆越多）")
     args = parser.parse_args()
