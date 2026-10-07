@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # skills/awam-skills/scripts → 索引仓根
@@ -72,13 +73,35 @@ def check(plan: dict, path: Path) -> list[str]:
     return problems
 
 
-def render(plan: dict) -> str:
+def _normalize_updated(value: str, plan_path: Path) -> str:
+    """校验 `updated` 字段：合法 ISO 日期/时间则规范显示，否则回退文件 mtime。
+
+    早先直接把 `plan.get("updated")` 拼进 markdown，脏值会原样渲染出来
+    （如误填 "今天" / 空串 / 带额外空格），视图里就成了「更新：今天」。
+    """
+    text = (value or "").strip()
+    if text:
+        try:
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                return dt.strftime("%Y-%m-%d %H:%M")
+            return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        except ValueError:
+            pass  # 落到 mtime 兜底
+    try:
+        mtime = datetime.fromtimestamp(plan_path.stat().st_mtime)
+        return mtime.strftime("%Y-%m-%d %H:%M") + "（取自文件修改时间）"
+    except OSError:
+        return "未知"
+
+
+def render(plan: dict, plan_path: Path | None = None) -> str:
     platforms = plan.get("platforms") or {}
     tiers = plan.get("tiers") or {}
     skills = plan.get("skills") or {}
     status_labels = plan.get("status_labels") or {}
     plan_labels = plan.get("plan_labels") or {}
-    updated = plan.get("updated", "")
+    updated = _normalize_updated(plan.get("updated", ""), plan_path or DEFAULT_PLAN)
 
     L: list[str] = []
     L.append("# 技能发布规划")
@@ -173,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         print("校验通过")
         return 0
 
-    md = render(plan)
+    md = render(plan, args.plan)
     if args.print:
         try:
             sys.stdout.reconfigure(encoding="utf-8")

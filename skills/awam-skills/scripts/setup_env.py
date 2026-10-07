@@ -17,6 +17,44 @@ import argparse
 import importlib.util
 import subprocess
 import sys
+from urllib.parse import urlparse
+
+# 已知可信镜像（同时给出白名单，避免 `--mirror` 被指向投毒源）
+TRUSTED_MIRROR_HOSTS = (
+    "pypi.org",
+    "files.pythonhosted.org",
+    "pypi.tuna.tsinghua.edu.cn",     # 清华
+    "mirrors.aliyun.com",            # 阿里
+    "mirrors.cloud.tencent.com",     # 腾讯
+    "mirrors.ustc.edu.cn",           # 中科大
+    "mirrors.huaweicloud.com",       # 华为
+    "pypi.mirrors.ustc.edu.cn",
+)
+
+
+def validate_mirror(url: str) -> str:
+    """校验 --mirror：必须 https，且主机在可信白名单内。
+
+    为什么必须校验：`--mirror` 会原样进入 `pip install -i <url>`，
+    一个 http 或被投毒的镜像可以直接把恶意包装进环境（供应链攻击）。
+    返回规范化后的 URL；不合法则抛 SystemExit。
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise SystemExit(
+            f"--mirror 必须是 https（当前：{url!r}）；"
+            "http 镜像会被中间人替换包内容。"
+        )
+    host = (parsed.hostname or "").lower()
+    if not host:
+        raise SystemExit(f"--mirror 无法解析主机名：{url!r}")
+    if host not in TRUSTED_MIRROR_HOSTS:
+        raise SystemExit(
+            f"--mirror 主机不在可信白名单内：{host}\n"
+            "  可信镜像：" + "、".join(TRUSTED_MIRROR_HOSTS) + "\n"
+            "  如确需自定义，请先确认该源可信再手动 pip install（本脚本不代跑）。"
+        )
+    return url
 
 # 包名 → import 名（不一致的显式写出）
 REQUIRED = {
@@ -86,8 +124,10 @@ def pip_install(pkgs: list[str], mirror: str | None) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser(description="awam-skills 依赖初始化")
     ap.add_argument("--check", action="store_true", help="只检测不安装")
-    ap.add_argument("--mirror", help="pip 镜像源（国内网络慢时用，如清华源）")
+    ap.add_argument("--mirror", help="pip 镜像源（仅 https 且在白名单内，如清华源）")
     args = ap.parse_args()
+
+    mirror = validate_mirror(args.mirror) if args.mirror else None
 
     log(f"解释器：{sys.executable}")
     miss = missing()
@@ -101,7 +141,7 @@ def main() -> int:
         return 1
 
     log("开始安装（modelscope 用 --no-deps，避免拖入 torch）…")
-    if not pip_install(miss, args.mirror):
+    if not pip_install(miss, mirror):
         log("⚠ 安装过程有失败，请检查网络或加 --mirror https://pypi.tuna.tsinghua.edu.cn/simple")
         return 1
 
