@@ -127,12 +127,12 @@
       "notes": "明确绑定 OpenClaw 生态 → ClawHub 首选；可选 ClawMart 付费变现"
     },
     "awam-windows-backup-skill": {
-      "tier": "t3",
+      "tier": "t2",
       "repo": "awam-skills/awam-windows-backup-skill",
       "summary": "Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "optional", "agentpowers": "skip", "skillssh": "optional" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "skip", "skillssh": "optional" },
       "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "todo", "agentpowers": "skip", "skillssh": "not_started" },
-      "notes": "绑定个人目录/配置，需把路径、仓库配置参数化泛化后再发"
+      "notes": "2026-10-08 完成参数化泛化（默认路径兜底技能根 _data、EXTRA_PROGRAM_DIRS 应用探测、模板去个人化）并补充新机 onboarding 文档，已提交并推送 e8f8042；定位国内：魔搭/豆包优先，国际平台可选"
     },
     "wiz-migration": {
       "tier": "t3",

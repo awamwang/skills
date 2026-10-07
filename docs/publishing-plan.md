@@ -33,7 +33,7 @@
 | `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
 | `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
 | `quicker-connector` | 实用 | ✅ | ◐ | ✅ | ◐ | ✅ | — | ✅ |
-| `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — | ○ |
+| `awam-windows-backup-skill` | 实用 | ✅ | ◐ | ◐ | ◐ | ◐ | — | ○ |
 | `wiz-migration` | 需改造 | ✅ | — | — | — | — | — | — |
 | `stock-hots-skill` | 需改造 | — | — | — | — | — | — | — |
 | `awam-todo-skill` | 需改造 | ✅ | ✅ | ✅ | ○ | ✅ | — | ✅ |
@@ -152,18 +152,18 @@
 | AgentPowers | 不建议 | — 不建议 |
 | skills.sh | 可选 / 需微调 | ✅ 已发布 |
 
-### awam-windows-backup-skill · 需改造
+### awam-windows-backup-skill · 实用
 
 - 仓库：`awam-skills/awam-windows-backup-skill`
 - 简介：Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出）
-- 规划：绑定个人目录/配置，需把路径、仓库配置参数化泛化后再发
+- 规划：2026-10-08 完成参数化泛化（默认路径兜底技能根 _data、EXTRA_PROGRAM_DIRS 应用探测、模板去个人化）并补充新机 onboarding 文档，已提交并推送 e8f8042；定位国内：魔搭/豆包优先，国际平台可选
 
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
 | GitHub（基础层） | 推荐发布 | ✅ 已发布 |
 | LobeHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
-| 魔搭 ModelScope | 可选 / 需微调 | ◐ 需处理 / 微调 |
-| 豆包技能中心 | 可选 / 需微调 | ◐ 需处理 / 微调 |
+| 魔搭 ModelScope | 推荐发布 | ◐ 需处理 / 微调 |
+| 豆包技能中心 | 推荐发布 | ◐ 需处理 / 微调 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 不建议 | — 不建议 |
 | skills.sh | 可选 / 需微调 | ○ 未发布 |
