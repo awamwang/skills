@@ -83,7 +83,7 @@
       "repo": "awam-skills/awam-git-skill",
       "summary": "Git 提交规范（Conventional Commits + 中文提交信息）",
       "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "optional", "skillssh": "publish" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo", "skillssh": "not_started" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo", "skillssh": "done" },
       "notes": "纯通用开发习惯，任何 agent 直接可用"
     },
     "awam-shandianshuo-skill": {
@@ -99,7 +99,7 @@
       "repo": "awam-skills/github-organize",
       "summary": "GitHub 仓库 / 星标整理（找 fork、归档案、可取消/归类星标）",
       "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "optional", "clawhub": "optional", "agentpowers": "optional", "skillssh": "publish" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "todo", "clawhub": "todo", "agentpowers": "todo", "skillssh": "not_started" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "todo", "clawhub": "todo", "agentpowers": "todo", "skillssh": "done" },
       "notes": "开发者高频需求，通用性强"
     },
     "windows-autostart-skill": {
@@ -123,7 +123,7 @@
       "repo": "awam-skills/quicker-connector",
       "summary": "OpenClaw 技能，连接 Quicker 自动化工具（读取动作库、自然语言匹配并执行动作）",
       "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "publish", "agentpowers": "skip", "skillssh": "optional" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "done", "doubao": "todo", "clawhub": "done", "agentpowers": "skip", "skillssh": "not_started" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "done", "doubao": "todo", "clawhub": "done", "agentpowers": "skip", "skillssh": "done" },
       "notes": "明确绑定 OpenClaw 生态 → ClawHub 首选；可选 ClawMart 付费变现"
     },
     "awam-windows-backup-skill": {
@@ -155,7 +155,7 @@
       "repo": "awam-skills/awam-todo-skill",
       "summary": "个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板",
       "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "publish", "agentpowers": "skip", "skillssh": "publish" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "done", "doubao": "not_started", "clawhub": "done", "agentpowers": "skip", "skillssh": "not_started" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "done", "doubao": "not_started", "clawhub": "done", "agentpowers": "skip", "skillssh": "done" },
       "notes": "存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚）。2026-10-07 首次发布时打包器把 storage/、env.json、index.json 一起发上了魔搭，已修复为「只发 git 跟踪文件」（scripts/public_files.py）并替换线上内容、下载复核清除；豆包导入包已按新规则重新生成。lobehub 需先在 LobeHub 网页「提交仓库」才能 claim（CLI 无法代做）"
     }
   }
