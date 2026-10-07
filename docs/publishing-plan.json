@@ -146,9 +146,9 @@
       "tier": "t3",
       "repo": "awam-skills/stock-hots-skill",
       "summary": "多平台热门股票榜单获取与聚合（WzSLinker 八合一聚合页首选，同花顺/通达信/东方财富/财联社直连兜底）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "skip", "agentpowers": "skip", "skillssh": "optional" },
-      "status": { "github": "not_started", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip", "skillssh": "not_started" },
-      "notes": "依赖外部榜单页/接口且部分平台直连有反爬；发布前建议把数据源参数化泛化"
+      "plan": { "github": "skip", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "status": { "github": "skip", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "notes": "2026-10-08 完成三项结构优化（sources.json 数据源配置化、--check 时效自检、失败平台明确上报）并本地提交 f240402；依赖外部榜单接口且经个人代理，标记不发送：不上传 GitHub、不发布各平台，仅本地使用"
     },
     "awam-todo-skill": {
       "tier": "t3",
