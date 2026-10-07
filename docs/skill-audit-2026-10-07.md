@@ -79,9 +79,10 @@
 
 ### 9. `plan_store.py` 用正则做 JSON 篡改
 - **位置**：`scripts/plan_store.py`
-- **问题**：正则替换仍是边界 case 风险源。原方案目的是保留单行紧凑排版。
-- **建议**：改为对象级操作 + 自实现「单行紧凑 dumps」重写整个 status 字段。
-- **状态**：☐ pending（**本轮未动** —— 改动较大，建议单独评估；现有 `json.loads` 写前自校验已能兜住改坏文件）
+- **问题**：原文用「定位扫描器 + 一处正则替换值 + 字符串拼接插键」，仍属文本级操作；写盘非原子。
+- **修复**：重构为**对象级 + 块级重写**——① `json.loads` 后直接在 dict 上改 `status.<platform>`（值正确性由对象操作保证，彻底去掉正则替换与手写拼接）；② 复用括号配对扫描器定位技能块，只重生成块内 `status` 那一行（统一紧凑格式 `{ "k": "v", ... }`，每平台一行）；③ 其余所有行原样保留；④ 写盘改**原子写**（temp + `os.replace`），消除中途崩溃截断风险。**逐字节保排版已放弃**（用户确认展示清晰即可，风格可统一）。
+- **实测**：真文件改动恰好 1 行、行数守恒、幂等；缺键新增 / 多行 status 压缩回单行 / 不存在技能 / 非法 JSON / 全技能连续改 共 6 用例通过；三发布脚本 `update_plan` 集成（doubao/clawhub/modelscope）端到端跑通，3 次调用仅 2 行变化（1 次为幂等 no-op）。
+- **状态**：✅ done（2026-10-07）
 
 ### 10. `setup_env.py --mirror` 不校验 URL scheme
 - **位置**：`scripts/setup_env.py`（新增 `validate_mirror` / `TRUSTED_MIRROR_HOSTS`）
@@ -170,7 +171,7 @@
 ## 推荐处置路径
 
 1. **第一批（建议立即修）**：P1 全部 6 项——凭据脱敏 + 超时 + 路径校验 + 文档修正 + gitignore 兜底。改动小、风险高、收益最大。
-2. **第二批（下一次发布窗口）**：P2 的 #7（白名单打包）、#8（敏感串扫描）、#11（错误处理补齐）、#12（仓库根 gitignore）。#9（plan_store 重构）单独评估。
+2. **第二批（下一次发布窗口）**：P2 的 #7（白名单打包）、#8（敏感串扫描）、#11（错误处理补齐）、#12（仓库根 gitignore）、#9（plan_store 对象级重构）。
 3. **第三批（质量收口）**：P3 6 项 + 结构性 A/B/C/D/E 按需排期。
 
 ---
@@ -183,3 +184,4 @@
 | 2026-10-07 | 修复 | P1 #1–#6 | 6 项全部落地；顺带完成 P3 #16 的 POSIX 权限告警。改动文件：`scripts/credentials.py`、`scripts/publish_modelscope.py`、`scripts/publish_clawhub.py`、`scripts/query_skills.py`、`references/platforms.md`。已验证：4 脚本 `py_compile` 通过；mask / 脱敏 / CLAWHUB_BIN 校验 / gitignore 守卫 均单测通过；`--show-credentials`、`query_skills.py`、两个 `--dry-run`、`preflight.py` 端到端跑通 |
 | 2026-10-07 | 提交 | P1 全部 | 拆两个 commit：`fix(skills): 收紧发布脚本的凭据脱敏与外部命令校验`、`docs(skills): 修正平台凭据示例并补充脱敏与守卫说明`（均未 push） |
 | 2026-10-07 | 修复 | P2 #7 #8 #10 #11 #12 + P3 #18 | 5 项 P2 落地 + 顺带完成 P3 #18。新增 `scripts/preflight_secrets.py`、`skills/awam-skills/.gitignore`；改 `public_files.py`（白名单 opt-in）、`setup_env.py`（mirror 校验）、`publish_doubao.py`（refresh_view）、三发布脚本（接入敏感串扫描 + `--skip-secret-scan`）、`plan_skills.py`（updated 校验）。已验证：10 脚本 `py_compile` 通过；mirror 校验 6 例、updated 6 例、扫描器拦截/豁免、白名单开关 全部单测通过；三个发布脚本 `--dry-run` + `preflight_secrets.py` 端到端跑通。**#9（plan_store 重构）本轮未动**，单独评估 |
+| 2026-10-07 | 重构 | P2 #9 | `plan_store.py` 改为对象级 + 块级重写：dict 层改值（去正则）、只重写 `status` 一行、原子写。逐字节保排版约束经用户确认放弃（展示清晰即可、风格可统一）。已验证：6 边界用例 + 三发布脚本 `update_plan` 集成全通过，真文件改动 1 行、行数守恒、幂等 |

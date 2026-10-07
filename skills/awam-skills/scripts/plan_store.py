@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""就地更新 `docs/publishing-plan.json` 里某技能的 `status.<platform>`，且**逐字节保留原排版**。
+"""就地更新 `docs/publishing-plan.json` 里某技能的 `status.<platform>`。
 
 为什么需要它：规划文件是**手写**的「对象单行紧凑」格式，例如
 
@@ -9,8 +9,13 @@
 若用 `json.dumps(plan, indent=2)` 整体重序列化，每个 6 平台对象都会被拆成 6 行，
 一次发布就产生上百行纯格式噪音，把真正的 1 行内容改动淹没在 diff 里（已踩过）。
 
-因此这里只做**文本级精确定位替换**：找到该技能块 → 找到其 `status` 对象 →
-只替换目标平台的字符串值，其余字节原样保留；写盘前再用 `json.loads` 自校验。
+因此这里只做**块级重写**：
+
+1. `json.loads` 拿到对象 → 在**对象层**改 `status.<platform>`（值正确性由此保证，不用正则）；
+2. 用括号配对扫描器定位该技能块在原文中的区间（跳过字符串，正确处理花括号）；
+3. 只重生成该块内的 `status` 那一行（统一紧凑格式，**每行一个平台对象**）；
+4. 其余所有行原样保留 —— 其他技能、platforms 段、tiers 段都不动；
+5. 原子写盘（临时文件 + `os.replace`），避免中途崩溃截断文件。
 
 对外只暴露一个函数：`set_status(plan_path, skill_key, platform, status) -> bool`。
 """
@@ -18,7 +23,8 @@
 from __future__ import annotations
 
 import json
-import re
+import os
+import tempfile
 from pathlib import Path
 
 
@@ -28,10 +34,14 @@ def _value_span(text: str, key: str) -> tuple[int, int] | None:
     找不到返回 None。用「括号配对 + 跳过字符串」而非正则，才能正确处理含
     花括号 / 转义引号的字符串值。
     """
-    m = re.search(r'"%s"\s*:\s*\{' % re.escape(key), text)
-    if not m:
+    # 先找到 `"key"` 字面量，再从其后第一个 `{` 开始配对。
+    marker = '"%s"' % key
+    kpos = text.find(marker)
+    if kpos < 0:
         return None
-    start = text.index("{", m.start())
+    start = text.find("{", kpos + len(marker))
+    if start < 0:
+        return None
     depth = 0
     i = start
     n = len(text)
@@ -56,6 +66,50 @@ def _value_span(text: str, key: str) -> tuple[int, int] | None:
     return None
 
 
+def _line_span(text: str, pos: int) -> tuple[int, int]:
+    """返回包含下标 `pos` 的整行区间 [行首, 换行符位置或文末]。"""
+    lo = text.rfind("\n", 0, pos) + 1
+    hi = text.find("\n", pos)
+    if hi < 0:
+        hi = len(text)
+    return lo, hi
+
+
+def _compact(obj: dict) -> str:
+    """把扁平 dict 序列化为单行紧凑 JSON：`{ "k": "v", "k2": "v2" }`。
+
+    保持与手写风格一致的「大括号内两侧各一个空格、键值间 `: `」写法；
+    中文不转义。仅用于 `status` / `plan` 这类一层扁平的字符串映射。
+    """
+    if not obj:
+        return "{ }"
+    inner = ", ".join(
+        '%s: %s' % (json.dumps(k, ensure_ascii=False), json.dumps(v, ensure_ascii=False))
+        for k, v in obj.items()
+    )
+    return "{ " + inner + " }"
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """原子写：同目录临时文件 → fsync → os.replace 覆盖。"""
+    path = Path(path)
+    fd, tmp = tempfile.mkstemp(
+        prefix=path.name + ".", suffix=".tmp", dir=str(path.parent)
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "done") -> bool:
     """把 `skills.<skill_key>.status.<platform>` 就地改成 `status`。
 
@@ -67,40 +121,46 @@ def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "do
         plan = json.loads(text)
     except json.JSONDecodeError:
         return False
-    if (plan.get("skills") or {}).get(skill_key) is None:
+
+    skills = plan.get("skills") or {}
+    entry = skills.get(skill_key)
+    if not isinstance(entry, dict):
         return False
 
+    # 1) 先在对象层改值 —— 保证写出的内容正确
+    st = entry.get("status")
+    if not isinstance(st, dict):
+        return False
+    if st.get(platform) == status:
+        return True  # 值本来就相同
+    st[platform] = status
+
+    # 2) 定位该技能块，只重写块内 status 那一行
     span = _value_span(text, skill_key)
     if span is None:
         return False
     lo, hi = span
     block = text[lo:hi + 1]
 
-    st = _value_span(block, "status")
-    if st is None:
+    st_span = _value_span(block, "status")
+    if st_span is None:
         return False
-    slo, shi = st
-    obj = block[slo:shi + 1]
+    slo, shi = st_span
+    # 相对原文的绝对区间
+    abs_slo, abs_shi = lo + slo, lo + shi
+    line_lo, line_hi = _line_span(text, abs_slo)
+    prefix = text[line_lo:abs_slo]  # 缩进 + `"status": `
+    # 对象结束位置到它所在行末的字符：单行时通常是 "" 或尾随逗号 ","；
+    # status 对象若跨多行（如文件被 indent=2 格式化过），这里会吃掉收尾行余下内容。
+    end_line_hi = _line_span(text, abs_shi)[1]
+    suffix = text[abs_shi + 1:end_line_hi]
+    new_text = text[:line_lo] + prefix + _compact(st) + suffix + text[end_line_hi:]
 
-    val = json.dumps(status, ensure_ascii=False)
-    if re.search(r'"%s"\s*:' % re.escape(platform), obj):
-        # 已有该平台键：只换值
-        new_obj = re.sub(
-            r'("%s"\s*:\s*)"[^"]*"' % re.escape(platform),
-            lambda m: m.group(1) + val,
-            obj,
-        )
-    else:
-        # 缺该平台键：插到 status 对象末尾（保持原有单行紧凑风格）
-        inner = obj[1:-1]
-        if inner.strip():
-            new_obj = "{" + inner.rstrip() + f', "{platform}": {val}' + "}"
-        else:
-            new_obj = '{ "' + platform + '": ' + val + " }"
-
-    new_text = text[:lo] + block[:slo] + new_obj + block[shi + 1:] + text[hi + 1:]
     if new_text == text:
         return True
-    json.loads(new_text)  # 写前自校验，防止改坏文件
-    plan_path.write_text(new_text, encoding="utf-8")
+    try:
+        json.loads(new_text)  # 写前自校验，防止改坏文件
+    except json.JSONDecodeError:
+        return False
+    _atomic_write(plan_path, new_text)
     return True
