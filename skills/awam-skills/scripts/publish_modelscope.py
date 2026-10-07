@@ -46,6 +46,7 @@ DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 PLAN_SCRIPT = Path(__file__).resolve().parent / "plan_skills.py"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import credentials as creds  # noqa: E402  （凭据查找：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
@@ -359,7 +360,7 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
 
 
 def refresh_view() -> None:
-    out = subprocess.run([sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=120)
+    out = subprocess.run([sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=constants.PLAN_SCRIPT)
     if out.returncode == 0:
         log(f"  视图已刷新：{out.stdout.strip() or 'docs/publishing-plan.md'}")
     else:

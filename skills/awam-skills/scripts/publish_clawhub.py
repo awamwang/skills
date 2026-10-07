@@ -31,6 +31,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import credentials as creds  # noqa: E402  （凭据查找 + 来源校验：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
@@ -168,7 +169,7 @@ def git_commit(skill_dir: Path) -> str | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(skill_dir), "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, timeout=constants.GIT_FAST,
         )
         return out.stdout.strip() or None
     except Exception:
@@ -194,10 +195,10 @@ def export_clean_dir(skill_dir: Path, skip_secret_scan: bool = False) -> tuple[P
 
     archive = subprocess.run(
         ["git", "-C", str(skill_dir), "archive", "--format=tar", "HEAD"],
-        capture_output=True, timeout=60,
+        capture_output=True, timeout=constants.GIT_ARCHIVE,
     )
     if archive.returncode == 0 and archive.stdout:
-        subprocess.run(["tar", "-x", "-C", str(staging)], input=archive.stdout, check=True, timeout=120)
+        subprocess.run(["tar", "-x", "-C", str(staging)], input=archive.stdout, check=True, timeout=constants.TAR_EXTRACT)
         root, note = public_files.find_skill_root(staging)
         if root is None:
             raise SystemExit(f"发布目录里找不到 SKILL.md：{note}")
@@ -234,8 +235,24 @@ def scan_staging(root: Path) -> None:
     log("  敏感串扫描：✅ 未发现疑似凭据")
 
 
-def run(cmd: list[str], env: dict, timeout: int = 300) -> subprocess.CompletedProcess:
+def run(cmd: list[str], env: dict, timeout: int = constants.CLI_RUN_DEFAULT) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=timeout)
+
+
+def check_channel(clawhub: list[str], env: dict) -> str:
+    """dry-run 时自检通道可用性：CLI 是否就绪 + 是否已登录。
+
+    与 publish_modelscope 的 check_channel 对齐：CLI 在 `find_clawhub` 阶段已
+    校验存在性，这里补登录态探测（whoami 一次），让 dry-run 也能提前暴露
+    「未登录」而不是等到正式发布才撞上。
+    """
+    whoami = run(clawhub + ["whoami"], env, timeout=constants.CLI_WHOAMI)
+    if whoami.returncode == 0:
+        user = (whoami.stdout or "").strip() or "(已登录)"
+        return f"CLI 就绪：{' '.join(clawhub)} ｜ 登录态：{user}"
+    return (
+        f"CLI 就绪：{' '.join(clawhub)} ｜ 未登录（正式发布前需 `clawhub login --device`）"
+    )
 
 
 def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
@@ -255,7 +272,7 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
 def refresh_view() -> None:
     """调用 plan_skills.py 刷新人读视图（不手改 md）。"""
     out = subprocess.run(
-        [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=120
+        [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=constants.PLAN_SCRIPT
     )
     if out.returncode == 0:
         log(f"  视图已刷新：{out.stdout.strip() or 'docs/publishing-plan.md'}")
@@ -290,7 +307,7 @@ def _run(args) -> int:
     env = clean_env()
 
     if not args.dry_run:
-        whoami = run(clawhub + ["whoami"], env, timeout=60)
+        whoami = run(clawhub + ["whoami"], env, timeout=constants.CLI_WHOAMI)
         if whoami.returncode != 0:
             raise SystemExit(
                 "未登录 ClawHub。先执行（设备流需人工在浏览器确认）：\n"
@@ -311,10 +328,11 @@ def _run(args) -> int:
     if args.changelog:
         cmd += ["--changelog", args.changelog]
     if args.dry_run:
+        log(f"  通道自检：{check_channel(clawhub, env)}")
         cmd.append("--dry-run")
 
     log("  发布中…（--no-input，已剥离代理；大包上传可能耗时数十秒）")
-    result = run(cmd, env, timeout=600)
+    result = run(cmd, env, timeout=constants.CLI_PUBLISH)
     output = (result.stdout or "").strip() or (result.stderr or "").strip()
     if output:
         log(f"  CLI 输出：{output}")
@@ -327,9 +345,9 @@ def _run(args) -> int:
 
     # 发布后核对线上版本
     # publication 是异步的：刚发布时仍显示旧版本，用 verify 轮询扫描/上线进度
-    verify = run(clawhub + ["skill", "verify", slug], env, timeout=120)
+    verify = run(clawhub + ["skill", "verify", slug], env, timeout=constants.CLI_VERIFY)
     log(f"  发布校验：{(verify.stdout or verify.stderr or '').strip()[:300]}")
-    inspect = run(clawhub + ["inspect", slug], env, timeout=60)
+    inspect = run(clawhub + ["inspect", slug], env, timeout=constants.CLI_INSPECT)
     latest = ""
     for line in (inspect.stdout or "").splitlines():
         if "Latest" in line or "· v" in line:

@@ -24,6 +24,7 @@ import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import credentials as creds  # noqa: E402  （凭据查找 + 来源校验：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
@@ -114,7 +115,7 @@ def refresh_view() -> None:
     """
     try:
         out = subprocess.run(
-            [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=120
+            [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=constants.PLAN_SCRIPT
         )
     except (OSError, subprocess.SubprocessError) as e:
         log(f"  ⚠ 刷新视图失败（无法执行）：{e}")

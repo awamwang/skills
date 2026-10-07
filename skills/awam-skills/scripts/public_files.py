@@ -25,7 +25,11 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 
 # 目录级：命中即整棵子树排除
 SENSITIVE_DIRS = {
@@ -159,7 +163,7 @@ def _git_tracked(skill_dir: Path) -> list[str] | None:
     try:
         r = subprocess.run(
             ["git", "ls-files", "-z", "--", "."],
-            cwd=str(skill_dir), capture_output=True, timeout=30,
+            cwd=str(skill_dir), capture_output=True, timeout=constants.GIT_OP,
         )
     except (OSError, subprocess.SubprocessError):
         return None

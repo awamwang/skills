@@ -39,6 +39,8 @@ import stat
 import sys
 from pathlib import Path
 
+import constants  # 共享超时等常量（见 constants.py）
+
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 
@@ -107,17 +109,30 @@ def candidate_paths(platform: str) -> list[Path]:
 
 
 def _check_file_perms(p: Path) -> None:
-    """POSIX 下凭据文件权限过宽时告警（Windows 无 POSIX mode，跳过）。"""
+    """POSIX 下凭据文件权限过宽 / owner 非本人时告警（Windows 无 POSIX mode，跳过）。
+
+    与审计 #16 互补：mode 过宽提示 chmod 600；owner 不是当前 uid 提示属主异常，
+    帮助快速定位「凭据文件被别的用户/root 持有」这类配置失误。
+    """
     if os.name == "nt":
         return
     try:
-        mode = stat.S_IMODE(p.stat().st_mode)
+        st = p.stat()
+        mode = stat.S_IMODE(st.st_mode)
+        uid = st.st_uid
     except OSError:
         return
+    cur_uid = os.getuid() if hasattr(os, "getuid") else None
     if mode & 0o077:
         _warn_once(
             f"perms:{p}",
             f"凭据文件权限过宽：{p}（{oct(mode)}，同组/其他用户可读）；建议 chmod 600",
+        )
+    if cur_uid is not None and uid != cur_uid:
+        _warn_once(
+            f"owner:{p}",
+            f"凭据文件属主异常：{p}（uid={uid}，当前 uid={cur_uid}）；"
+            "若非本人创建，请核对来源并考虑 chown 后再用",
         )
 
 
@@ -226,7 +241,7 @@ def git_remote_repo(skill_dir: Path) -> str | None:
     try:
         out = subprocess.run(
             ["git", "-C", str(skill_dir), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=20,
+            capture_output=True, text=True, timeout=constants.GIT_FAST,
         )
         url = out.stdout.strip()
     except (OSError, subprocess.SubprocessError):

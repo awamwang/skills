@@ -5,3 +5,6 @@
 # Python 字节码
 __pycache__/
 *.pyc
+
+# 依赖隔离虚拟环境（setup_env.py 默认建在 tools/.venv，不进版本库）
+tools/.venv/

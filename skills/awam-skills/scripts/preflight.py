@@ -34,10 +34,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import public_files  # noqa: E402  （公开文件集判定：见 public_files.py）
 
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
+OVERRIDES_PATH = INDEX_ROOT / "skills.overrides.json"
 
 ORG = "awam-skills"
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
@@ -83,7 +85,7 @@ def git(skill_dir: Path, *args: str) -> tuple[int, str]:
     try:
         r = subprocess.run(
             ["git", "-C", str(skill_dir), *args],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, timeout=constants.GIT_OP,
         )
     except (OSError, subprocess.SubprocessError) as e:
         return 1, str(e)
@@ -172,6 +174,49 @@ def check_git(skill_dir: Path, rep: Report) -> bool:
     elif rc == 0:
         rep.add("pass", "工作区干净")
     return True
+
+
+def check_index_registration(skill_dir: Path, rep: Report) -> None:
+    """确认技能已在索引仓 `skills.overrides.json` 登记（发布后 query_skills 才能对上）。
+
+    这是「结构性」检查而非硬阻断：未登记不阻止发布（首次发布前本就该补登记），
+    但会 WARN，避免「发出去却没进索引」导致组织/索引/本机三源对比出现缺口。
+    """
+    if is_index_bundled(skill_dir):
+        rep.add("pass", "已进索引", "索引仓自带技能，无需 overrides 登记")
+        return
+
+    rc, url = git(skill_dir, "remote", "get-url", "origin")
+    if rc != 0 or not url:
+        rep.add("warn", "已进索引", "无 origin，无法核对是否已登记 overrides")
+        return
+    m = re.search(r"github\.com[:/](.+?)(?:\.git)?$", url)
+    full = m.group(1) if m else None
+    if not full:
+        rep.add("warn", "已进索引", f"origin 无法解析 owner/repo：{url}")
+        return
+
+    if not OVERRIDES_PATH.is_file():
+        rep.add("warn", "已进索引", f"索引仓缺 {OVERRIDES_PATH.name}")
+        return
+    try:
+        cfg = json.loads(OVERRIDES_PATH.read_text(encoding="utf-8"))
+        overrides = dict(cfg.get("overrides") or {})
+        exclude = set(cfg.get("exclude") or [])
+    except (OSError, json.JSONDecodeError) as e:
+        rep.add("warn", "已进索引", f"读取 {OVERRIDES_PATH.name} 失败：{e}")
+        return
+
+    if full in overrides:
+        rep.add("pass", "已进索引", f"{full} 已在 overrides 登记")
+    elif full in exclude:
+        rep.add("warn", "已进索引", f"{full} 在 exclude 里（有意不发布到该渠道）")
+    else:
+        rep.add(
+            "warn", "已进索引",
+            f"{full} 未在 skills.overrides.json 登记：发布后 query_skills 三源对比会缺这个技能；"
+            "首次发布前补一条 overrides（owner/repo + description）",
+        )
 
 
 def check_sync(skill_dir: Path, rep: Report) -> None:
@@ -365,6 +410,7 @@ def inspect(skill_dir: Path) -> Report:
     is_git = check_git(skill_dir, rep)
     if is_git:
         check_sync(skill_dir, rep)
+        check_index_registration(skill_dir, rep)
     check_frontmatter(skill_md, rep)
     check_text_hygiene(skill_dir, skill_md, rep)
     check_public_files(skill_dir, rep)
