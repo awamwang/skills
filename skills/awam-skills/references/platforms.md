@@ -78,14 +78,18 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓> --json     # �
 | 3 | `<PLATFORM>_CREDENTIALS` 指向的文件 | `MODELSCOPE_CREDENTIALS=/path/cred.json` |
 | 4 | **用户级配置（推荐落点）** | `~/.workbuddy/secrets/modelscope.json` |
 | 5 | 用户级统一配置 | `~/.config/awam-skills/credentials.json`（`platforms.<platform>` 段） |
-| 6 | 仓内本地配置 | 索引仓 `.credentials.local.json`（已 gitignore） |
+| 6 | 仓内本地配置（**需已 gitignore**） | 索引仓 `.credentials.local.json` |
 
 - **推荐落点是 `~/.workbuddy/secrets/<platform>.json`**：该目录不在任何 git 仓库内，天然不会被提交。
 - 配置格式（平台专属文件）：`{"owner": "<用户名>", "api_key": "...", "sdk_token": "..."}`；
   token 字段按 `token > api_key > sdk_token > access_token` 取第一个非空值。
   统一文件则写在 `platforms.<platform>` 段下。
+- **仓内兜底路径有双重确认**：第 6 项只在索引仓 `.gitignore` 确实覆盖
+  `.credentials.local.json`（或 `*.credentials.json`）时才启用；否则自动跳过并告警 ——
+  防止 gitignore 被误删 / 被 fork 仓遗漏时凭据静默进版本库。优先级建议直接用第 4 项，绕开该风险。
+- POSIX 下凭据文件权限过宽（同组 / 其他用户可读）时会告警，建议 `chmod 600`。
 - 排查：`python scripts/publish_modelscope.py --dir <技能仓> --show-credentials`
-  只打印**来源路径与脱敏 token**（前 8 位 + 长度），不打印明文。
+  只打印**来源路径与脱敏 token**（首尾各 4 位 + 长度，短 token 只留长度），不打印明文。
 - 铁律：token 不入库、不进日志；脚本日志只输出来源路径。
 
 ## 各平台发布步骤
@@ -102,13 +106,18 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓> --json     # �
 **踩坑（market-cli 0.0.41）：** `skill publish` 会复用 `skill list` 的共享请求头，把 `Content-Type` 设成 `application/json`（而非 `multipart/form-data`），服务端报 `Failed to parse form data`。**绕过方式**——用 curl 手动发送 multipart：
 
 ```bash
+# ⚠ token 只从环境变量读，不要写进命令行（会落 shell history / 终端日志）
+read -rs LOBEHUB_TOKEN   # 交互式输入，不回显；或从其它安全渠道导入
 curl -X POST "https://market.lobehub.com/api/v1/user/skills/<identifier>/versions" \
-  -H "Authorization: Bearer <token>" \
+  -H "Authorization: Bearer $LOBEHUB_TOKEN" \
   -F "file=@<技能目录>.zip;type=application/zip;filename=<identifier>.zip"
+unset LOBEHUB_TOKEN      # 用完即清
 ```
 
+> 上面 `<identifier>` / `<技能目录>` 才是需要你替换的占位符；**千万别**把 `<token>` 直接换成明文 token 再粘贴执行。
+
 - zip 打包规则与 CLI 一致：`SKILL.md` 在 zip 根，跳过 `.` / `node_modules` / `__pycache__`；frontmatter `name` / `version` / `description` 即可，`name` 小写 kebab 且与目录名一致。
-- 鉴权 token 取 CLI 本地已存的 user token（调试日志可见 `Authorization: Bearer ...`）；仅走环境变量，用完即清。
+- 鉴权 token 取 CLI 本地已存的 user token（调试日志可见 `Authorization: Bearer ...`）；**只经环境变量传递，用完即 `unset`**，不要写进命令行、脚本文件或长期留存的调试文件。
 - 验证：`lhm skill list`（status 应为 `published`）；marketplace 页 `market.lobehub.com/s/<identifier>`。
 
 ### 魔搭 ModelScope（已实测）
