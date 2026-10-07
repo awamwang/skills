@@ -33,8 +33,29 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓> --json     # �
 | 工作区有未提交改动 → WARN | 平台发的是工作区内容，与仓库 HEAD 不一致 |
 | frontmatter `name` / `version` / `description` | 魔搭与 LobeHub 都硬性要求；**老仓常只缺 `version`**（实测 windows-autostart） |
 | BOM / CRLF | CRLF 会让魔搭报 `must contain 'name' field`（实际是行尾问题）。本机多数仓 `core.autocrlf=true`，工作区必然 CRLF —— 这种情况 preflight 判为正常（发布时会自动转 LF），只在 autocrlf 未开时才提示 |
-| **私密文件是否已被 git 跟踪** → FAIL | 发布包已自动排除，但仓库里已经泄漏，得 `git rm --cached` + 补 `.gitignore` |
+| 私密文件是否已被 git 跟踪 → FAIL | 发布包已自动排除，但仓库里已经泄漏，得 `git rm --cached` + 补 `.gitignore` |
 | 已安装副本与索引仓**内容哈希**是否一致 | 复制型副本会过期，照它读文档 / 跑脚本会走弯路（实测踩到） |
+
+### 敏感串扫描（发布包最后一关，不可逆）
+
+上传公开平台**收不回**（旧内容可能已被缓存 / 索引），所以打包与上传之间还有一道内容扫描：
+
+```bash
+python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独立跑，命中 exit 1
+```
+
+三个发布脚本（魔搭 / 豆包 / ClawHub）**已内置**该扫描，打包前自动跑，命中即中止：
+
+| 层 | 抓什么 |
+|---|---|
+| 文件名 | `.env*`、`*.pem`/`*.key`/`*.p12`、`*credential*`/`*secret*`/`*password*` |
+| 内容 | 私钥块、`ghp_`/`gho_`/`github_pat_`、`sk-`、`AKIA`/`ASIA`、`ms-`、Stripe/Slack/Google key、JWT、数据库连接串（含口令）、`key = 长随机值` 赋值 |
+
+- 确属误报：在对应行加 `# awam-allow-secret` 注释豁免；或把文件排除出发布集。
+- `credentials.py` / `preflight_secrets.py` 等**处理**凭据的源码文件名已豁免（内容扫描仍生效）。
+- 逃生阀：三脚本均支持 `--skip-secret-scan`（跳过即自担风险）。
+- 另可选加固：设置 `AWAM_PACK_WHITELIST_DIRS=references,scripts,templates` 启用**顶层目录白名单**，
+  只有列出的顶层目录进入发布包（默认关闭，避免误伤 `assets/`、`evals/` 等合法目录）。
 
 ## 打包根：扁平 vs 嵌套（决定 zip 能不能被平台接受）
 

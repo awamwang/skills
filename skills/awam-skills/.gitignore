@@ -1,0 +1,22 @@
+# 本 Skill 自身的排除规则（注意：templates/gitignore 是给「被创建的技能仓」用的，
+# 与这份无关 —— 早先只在索引仓根有 .gitignore，Skills 目录下的工程产物会漏进仓库）
+
+# Python 字节码
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 运行期缓存与本地状态
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.workbuddy/
+
+# 本地发布产物（脚本默认已输出到仓外 ~/.awam-publish，这里兜底）
+*-doubao.zip
+*.publish.zip
+
+# 本地凭据（双保险：根 .gitignore 已有，这里再声明一次）
+.credentials.local.json
+*.credentials.json

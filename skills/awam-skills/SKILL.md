@@ -24,6 +24,7 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
 | **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、会不会夹带私密数据） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
+| **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；三个发布脚本已内置，命中即中止（不可逆） |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
 | 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包各有 [scripts/](scripts/) 下对应脚本） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
