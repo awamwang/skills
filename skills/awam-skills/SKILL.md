@@ -5,7 +5,7 @@ description: >-
   按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
   索引仓远程 / 本机 ~/.agents/skills/awam 的技能列表与存在性，以及把技能发布到第三方
-  平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / AgentPowers）并维护发布规划
+  平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / skills.sh / AgentPowers）并维护发布规划
   （docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度（git 状态、
   与远程是否同步、frontmatter、打包根、会不会把本机私密数据打进公开包）。
   在用户提到创建技能、初始化技能仓、发布技能、收录到
@@ -24,9 +24,9 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
 | **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、会不会夹带私密数据） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
-| **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；三个发布脚本已内置，命中即中止（不可逆） |
+| **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub 三个上传型脚本已内置，命中即中止（不可逆）；skills.sh 无上传环节，不适用 |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
-| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包各有 [scripts/](scripts/) 下对应脚本） |
+| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包 / skills.sh 各有 [scripts/](scripts/) 下对应脚本） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |
 | 列组织 / 索引远程 / 本机 awam 技能并对比 | [查询](references/query.md) |
@@ -116,5 +116,5 @@ rm -rf "$DST/scripts/__pycache__"
 | 改 `skills.overrides.json` | ❌ | ✅ | ❌ | — |
 | 本地 `sync_skills.py` | ❌ | ❌（交给 Actions） | ❌ | — |
 | 跑 `query_skills.py` | — | — | ✅ 必跑 | — |
-| 发布到第三方平台 | — | — | — | ✅ platforms.md（ClawHub 走 [publish_clawhub.py](scripts/publish_clawhub.py)） |
+| 发布到第三方平台 | — | — | — | ✅ platforms.md（魔搭 / 豆包 / ClawHub / skills.sh 各有对应脚本） |
 | 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | ✅ 建议 | — | ✅ 必跑 |

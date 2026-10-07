@@ -73,7 +73,7 @@ _Avoid_: 手改 `publishing-plan.md` 视图（由脚本生成）；漏登记新�
 
 ## 平台发布
 
-把 `awam-skills` 组织下已公开的技能发布到第三方技能平台（LobeHub、魔搭 ModelScope、豆包技能中心、ClawHub、AgentPowers）。流程见 `references/platforms.md`；发布后同步 `publishing-plan.json`。不含替用户注册、登录或付费。
+把 `awam-skills` 组织下已公开的技能发布到第三方技能平台（LobeHub、魔搭 ModelScope、豆包技能中心、ClawHub、skills.sh、AgentPowers）。流程见 `references/platforms.md`；发布后同步 `publishing-plan.json`。不含替用户注册、登录或付费。
 
 _Avoid_: 在平台之外另造市场 / 清单文件作为发布依据
 

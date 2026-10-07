@@ -17,7 +17,7 @@
 
 1. **目录**：若路径不存在则创建；`git init`（已是 git 仓则跳过）。默认分支 `main`。
 2. **写入最小文件**：
-   - **扁平**：根目录 [templates/SKILL.md](../templates/SKILL.md)（替换 `name` / `description`）+ [templates/gitignore](../templates/gitignore) → `.gitignore`
+   - **扁平**：根目录 [templates/SKILL.md](../templates/SKILL.md)（替换 `name` / `description` / `repo`）+ [templates/gitignore](../templates/gitignore) → `.gitignore`
    - **嵌套**：`skills/<name>/SKILL.md`（同上模板）+ 根 `.gitignore`；**不要**预置空 `CONTEXT.md` / `docs/agents` / `evals`，除非用户当次明确要求
 3. **awam-git**：按已安装的 `awam-git` Skill，在技能仓根写入 `.cursor/rules/git-commit.mdc` 与 `.cursorrules`。推荐 scope：`skills`、`doc`（有脚本再加 `scripts`）。
 4. **建远程空仓**（需 `gh` 已登录且对组织有权限）：
@@ -53,6 +53,7 @@
 - frontmatter 含 `name`、`version`（创建默认 `0.0.1`）、`description`；默认加 `disable-model-invocation: true`（仅用户点名时加载）。若用户要求可被模型自动调用，再去掉该字段。发布到第三方平台（魔搭 / LobeHub）前按 semver 提升 `version`。
 - description 用第三人称、含 WHAT + WHEN；可中文。
 - 正文只写该技能自己的步骤；不要塞通用「如何写好 Skill」教程。
+- 模板「安装」段的 `{{repo}}` 替换为最终仓库名（`<name>-skill` 命名规则）；skills.sh 徽章与安装命令随收录生效，未收录前徽章指向 404 属正常，可先删掉该段等发布后再加回。
 - [templates/gitignore](../templates/gitignore) 已预置 `storage/`、`env.json`、`index.json`、
   `_user_meta.json` —— 技能仓是**公开物**，本机数据 / 本机配置要从源头就不进 git
   （2026-10-07 曾把 `storage/`、`env.json` 打进公开发布包，见 [platforms.md](platforms.md) 的「发布包内容」一节）。

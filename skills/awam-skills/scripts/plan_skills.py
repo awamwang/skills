@@ -23,7 +23,7 @@ INDEX_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PLAN = INDEX_ROOT / "docs" / "publishing-plan.json"
 DEFAULT_OUT = INDEX_ROOT / "docs" / "publishing-plan.md"
 
-PLATFORM_ORDER = ["github", "lobehub", "modelscope", "doubao", "clawhub", "agentpowers"]
+PLATFORM_ORDER = ["github", "lobehub", "modelscope", "doubao", "clawhub", "agentpowers", "skillssh"]
 
 STATUS_SYMBOL = {
     "done": "✅",

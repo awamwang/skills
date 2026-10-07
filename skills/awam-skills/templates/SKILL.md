@@ -14,3 +14,11 @@ disable-model-invocation: true
 ## 步骤
 
 1. （待实现）按该技能的实际流程填写
+
+## 安装
+
+```bash
+npx skills add awam-skills/{{repo}}
+```
+
+[![skills.sh](https://skills.sh/b/awam-skills/{{repo}})](https://skills.sh/awam-skills/{{repo}})

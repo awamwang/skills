@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-06
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-07 00:00
 
 ## 平台
 
@@ -12,6 +12,7 @@
 | **豆包技能中心** | 国内 | 技能中心导入 | 主推 | 豆包电脑版侧边栏技能入口，可挂自定义技能，成本最低 |
 | **ClawHub** | 国际 | clawhub CLI | 定向 | OpenClaw 官方 registry；quicker-connector 绑定此生态；社区含少量恶意样本需留意来源 |
 | **AgentPowers** | 国际 | MCP 提交 | 可选 | 基于 MCP 标准、12+ 平台、8 层安全扫描，偏付费/高品质市场 |
+| **skills.sh** | 国际 | skills CLI 安装遥测（npx skills add） | 主推 | find-skills 生态默认发现面；无提交通道，一次安装即收录，排名=安装量；触发成本≈0 |
 
 ## 梯队
 
@@ -23,19 +24,19 @@
 
 图例：✅ 已发布　○ 未发布　◐ 需处理 / 微调　⚠ 受阻　— 不建议
 
-| 技能 | 梯队 | GitHub（基础层） | LobeHub | 魔搭 ModelScope | 豆包技能中心 | ClawHub | AgentPowers |
-|------|:----:|:---:|:---:|:---:|:---:|:---:|:---:|
-| `ssh-deploy-skill` | 最值得 | ✅ | ✅ | ✅ | ✅ | ◐ | — |
-| `awam-git-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ◐ |
-| `awam-shandianshuo-skill` | 需改造 | ○ | — | ○ | ○ | — | — |
-| `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ |
-| `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
-| `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ |
-| `quicker-connector` | 实用 | ✅ | ◐ | ✅ | ◐ | ✅ | — |
-| `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — |
-| `wiz-migration` | 需改造 | ✅ | — | — | — | — | — |
-| `stock-hots-skill` | 需改造 | ○ | ○ | ○ | ○ | — | — |
-| `awam-todo-skill` | 需改造 | ✅ | ○ | ✅ | ○ | ✅ | — |
+| 技能 | 梯队 | GitHub（基础层） | LobeHub | 魔搭 ModelScope | 豆包技能中心 | ClawHub | AgentPowers | skills.sh |
+|------|:----:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `ssh-deploy-skill` | 最值得 | ✅ | ✅ | ✅ | ✅ | ◐ | — | ✅ |
+| `awam-git-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ◐ | ○ |
+| `awam-shandianshuo-skill` | 需改造 | ○ | — | ○ | ○ | — | — | — |
+| `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ | ○ |
+| `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
+| `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
+| `quicker-connector` | 实用 | ✅ | ◐ | ✅ | ◐ | ✅ | — | ○ |
+| `awam-windows-backup-skill` | 需改造 | ✅ | ◐ | ◐ | ◐ | ◐ | — | ○ |
+| `wiz-migration` | 需改造 | ✅ | — | — | — | — | — | — |
+| `stock-hots-skill` | 需改造 | ○ | ○ | ○ | ○ | — | — | ○ |
+| `awam-todo-skill` | 需改造 | ✅ | ○ | ✅ | ○ | ✅ | — | ○ |
 
 ## 明细
 
@@ -53,6 +54,7 @@
 | 豆包技能中心 | 推荐发布 | ✅ 已发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 推荐发布 | — 不建议 |
+| skills.sh | 推荐发布 | ✅ 已发布 |
 
 ### awam-git-skill · 最值得
 
@@ -68,6 +70,7 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 可选 / 需微调 | ◐ 需处理 / 微调 |
+| skills.sh | 推荐发布 | ○ 未发布 |
 
 ### awam-shandianshuo-skill · 需改造
 
@@ -83,6 +86,7 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 不建议 | — 不建议 |
 
 ### github-organize · 最值得
 
@@ -98,6 +102,7 @@
 | 豆包技能中心 | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 可选 / 需微调 | ◐ 需处理 / 微调 |
+| skills.sh | 推荐发布 | ○ 未发布 |
 
 ### windows-autostart-skill · 实用
 
@@ -113,6 +118,7 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 推荐发布 | ○ 未发布 |
+| skills.sh | 可选 / 需微调 | ○ 未发布 |
 
 ### letsencrypt-windows-skill · 实用
 
@@ -128,6 +134,7 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 推荐发布 | ○ 未发布 |
+| skills.sh | 可选 / 需微调 | ○ 未发布 |
 
 ### quicker-connector · 实用
 
@@ -143,6 +150,7 @@
 | 豆包技能中心 | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | ClawHub | 推荐发布 | ✅ 已发布 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 可选 / 需微调 | ○ 未发布 |
 
 ### awam-windows-backup-skill · 需改造
 
@@ -158,6 +166,7 @@
 | 豆包技能中心 | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | ClawHub | 可选 / 需微调 | ◐ 需处理 / 微调 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 可选 / 需微调 | ○ 未发布 |
 
 ### wiz-migration · 需改造
 
@@ -173,6 +182,7 @@
 | 豆包技能中心 | 不建议 | — 不建议 |
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 不建议 | — 不建议 |
 
 ### stock-hots-skill · 需改造
 
@@ -188,6 +198,7 @@
 | 豆包技能中心 | 可选 / 需微调 | ○ 未发布 |
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 可选 / 需微调 | ○ 未发布 |
 
 ### awam-todo-skill · 需改造
 
@@ -203,4 +214,5 @@
 | 豆包技能中心 | 推荐发布 | ○ 未发布 |
 | ClawHub | 推荐发布 | ✅ 已发布 |
 | AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 推荐发布 | ○ 未发布 |
 

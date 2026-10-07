@@ -2,7 +2,7 @@
 
 把 `awam-skills` 组织下已公开的技能发布到第三方技能平台，并同步发布规划。
 
-> 平台命令 / 接口以各平台**官方文档为最新权威**；本页给出当前公开流程、入口与**实测踩坑**（截至 2026-10，已实测发布 `ssh-deploy-skill`：魔搭、LobeHub、豆包导入包；`quicker-connector`：魔搭 **SDK 通道** + ClawHub + 豆包导入包；`awam-todo-skill`：魔搭、ClawHub + 豆包导入包，LobeHub 被人工前置挡住）。账号注册、登录与付费由用户完成，本 Skill 不代为处理。
+> 平台命令 / 接口以各平台**官方文档为最新权威**；本页给出当前公开流程、入口与**实测踩坑**（截至 2026-10，已实测发布 `ssh-deploy-skill`：魔搭、LobeHub、豆包导入包、skills.sh 收录；`quicker-connector`：魔搭 **SDK 通道** + ClawHub + 豆包导入包；`awam-todo-skill`：魔搭、ClawHub + 豆包导入包，LobeHub 被人工前置挡住）。账号注册、登录与付费由用户完成，本 Skill 不代为处理。
 
 ## 通用前置
 
@@ -86,6 +86,7 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 | **豆包技能中心** | 国内 | [publish_doubao.py](../scripts/publish_doubao.py) 打包 + 客户端导入 | 豆包客户端 | 个人工作流与通用技能；成本最低 |
 | **ClawHub** | 国际 | [publish_clawhub.py](../scripts/publish_clawhub.py)（封装 `clawhub` CLI） | npm 包 `clawhub` + 设备流登录 | OpenClaw 生态技能（quicker-connector） |
 | **AgentPowers** | 国际 | MCP 标准提交（8 层安全扫描） | 账号 / 后台 | 高品质 / 付费向（windows-autostart、letsencrypt 等） |
+| **skills.sh** | 国际 | [publish_skillssh.py](../scripts/publish_skillssh.py)（skills CLI 安装遥测触发收录） | 无需凭据 | 一切已公开技能（find-skills 生态默认发现面） |
 
 ## 凭据管理（通用）
 
@@ -289,6 +290,31 @@ python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --keep-tm
     （CLI / registry 的编码往返问题）。功能无碍，但看起来脏；要么接受，要么发布前把非 ASCII
     文件名的文件改名 / 排除。
 
+### skills.sh（find-skills 生态，已实测 2026-10-07：ssh-deploy-skill 收录）
+
+**收录机制特殊**：没有提交 / 上传入口。skills.sh 的索引由 skills CLI 的**匿名安装遥测**自动触发——任何人在遥测开启的环境执行一次 `npx skills add <owner>/<repo>`，仓库与技能即出现在 skills.sh（排名 = 累计安装量）。所以「发布」= 触发一次安装并确认页面 200。**无需任何账号 / token，发布内容就是公开 GitHub 仓本身**——无上传环节，敏感串扫描不适用（靠 preflight 的「私密文件已被 git 跟踪」检查兜底）。
+
+一键脚本 [publish_skillssh.py](../scripts/publish_skillssh.py) 已封装（发现性 dry-run → 临时目录安装 → 页面轮询 → 刷新规划）：
+
+```bash
+python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --dry-run      # 只验证 CLI 能发现
+python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓>                # 触发收录 + 刷新规划
+python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --verify-only  # 收录延迟时稍后确认
+python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --customize    # 生成 skills.sh.json 模板
+```
+
+要点（skills CLI 1.7.1 实测）：
+
+1. **发现性检查**：`npx -y skills@1.7.1 add <owner>/<repo> -l -y` 只克隆公开仓并列出技能，不安装、无遥测——干跑即验证「GitHub 公开 + SKILL.md 能被 CLI 识别」。`--json` 不能与 `-l` 组合（CLI 直接报错）。
+2. **必须在临时目录里触发安装**：`add <repo> --all --json`（`--all` = `--skill '*' --agent '*' -y`）是 project 作用域安装，实测一次给 **79 个 agent** 把 `.agents/` `.claude/` `agent/` `skills-lock.json` 全写进 **cwd**——在技能仓里跑等于往工作区倒垃圾。脚本在含 `package.json` 的临时目录里跑，完事即删（`--keep-tmp` 保留排查）。
+3. **遥测开关**：`DISABLE_TELEMETRY` / `DO_NOT_TRACK` 置位时安装**不计入**排名。脚本会在触发子进程剥离这两个变量（置位时打日志）；自己手敲命令前先确认没设。
+4. **版本锁定 `skills@1.7.1`**：`npx -y` 拉包即执行，防投毒（与 LobeHub 锁 `@0.0.41` 同理）。升级前先 `npm view skills version` 核对，再改脚本默认值或临时用 `--npx-package`。
+5. **收录有延迟**：实测触发后几十秒内 `https://skills.sh/<owner>/<repo>` 从 404 变 200。脚本轮询约 90s；超时不代表失败，稍后跑 `--verify-only` 单独确认——**不要反复重装刷安装量**（排名就是安装量，刷量无意义还留垃圾）。
+6. **`skills.sh.json` 定制**（可选）：仓库根放 `{"$schema": "https://skills.sh/schemas/skills.sh.schema.json", "notGrouped": "bottom", "groupings": [...]}` 只影响仓库页的**分组展示**，一仓多技能（嵌套布局）才有意义。`--customize` 生成合法 JSON 模板；skills.sh 会直接解析该文件，**别提交非法 JSON**。
+7. **README 徽章与安装命令**：收录后可在技能仓 README 加 `[![skills.sh](https://skills.sh/b/awam-skills/<repo>)](https://skills.sh/awam-skills/<repo>)` 徽章与 `npx skills add awam-skills/<repo>` 安装命令（创建模板已含，见 templates/）。
+
+另：与 ClawHub 剥代理的场景相反，本机实测**走代理安装正常**，脚本不剥 `*_PROXY`。
+
 ### AgentPowers（未实测）
 
 - 按 MCP 标准提交，经 8 层自动化安全扫描后上线。
@@ -307,6 +333,7 @@ python skills/awam-skills/scripts/publish_clawhub.py --dir <技能仓> --keep-tm
 | ClawHub | `clawhub inspect <slug>` / `clawhub skill verify <slug>` | `Latest` 版本与文件数；`verify` 的 `ok:false` 不必然是发布失败（见 ClawHub 小节） |
 | LobeHub | `npx -y @lobehub/market-cli@0.0.41 skill list` | status 为 `published` |
 | 豆包 | 客户端「我的技能」里看条目 | 无 API，只能人工看；导入成功后回跑 `--mark-done` |
+| skills.sh | `GET https://skills.sh/<owner>/<repo>`（脚本 `--verify-only`） | 页面 200 即已收录；404 = 索引还没上线，稍后再确认，勿反复重装刷安装量 |
 
 ## 批量发布
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-06",
+  "updated": "2026-10-07",
   "platforms": {
     "github": {
       "name": "GitHub（基础层）",
@@ -43,6 +43,13 @@
       "channel": "MCP 提交",
       "priority": "可选",
       "note": "基于 MCP 标准、12+ 平台、8 层安全扫描，偏付费/高品质市场"
+    },
+    "skillssh": {
+      "name": "skills.sh",
+      "region": "国际",
+      "channel": "skills CLI 安装遥测（npx skills add）",
+      "priority": "主推",
+      "note": "find-skills 生态默认发现面；无提交通道，一次安装即收录，排名=安装量；触发成本≈0"
     }
   },
   "tiers": {
@@ -67,88 +74,88 @@
       "tier": "t1",
       "repo": "awam-skills/ssh-deploy-skill",
       "summary": "通用 SSH 部署 / 多服务器 / 批量 / 文件传输 / Docker·MySQL·Nginx 模板 / 国内镜像优化",
-      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
-      "status": { "github": "done", "lobehub": "done", "modelscope": "done", "doubao": "done", "clawhub": "todo", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish", "skillssh": "publish" },
+      "status": { "github": "done", "lobehub": "done", "modelscope": "done", "doubao": "done", "clawhub": "todo", "agentpowers": "skip", "skillssh": "done" },
       "notes": "运维刚需、跨平台通用，最优先铺开"
     },
     "awam-git-skill": {
       "tier": "t1",
       "repo": "awam-skills/awam-git-skill",
       "summary": "Git 提交规范（Conventional Commits + 中文提交信息）",
-      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "optional" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo" },
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "optional", "skillssh": "publish" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "todo", "skillssh": "not_started" },
       "notes": "纯通用开发习惯，任何 agent 直接可用"
     },
     "awam-shandianshuo-skill": {
       "tier": "t3",
       "repo": "awam-skills/awam-shandianshuo-skill",
       "summary": "读取与更新闪电说（Shandianshuo）模型配置：供应商/模型/槽位 CRUD、开通关闭、备份+原子写",
-      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip" },
-      "status": { "github": "not_started", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "status": { "github": "not_started", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
       "notes": "绑定闪电说产品配置路径与 v3 schema；脚本已支持 --config 参数化，正式发布前建议再泛化"
     },
     "github-organize": {
       "tier": "t1",
       "repo": "awam-skills/github-organize",
       "summary": "GitHub 仓库 / 星标整理（找 fork、归档案、可取消/归类星标）",
-      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "optional", "clawhub": "optional", "agentpowers": "optional" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "todo", "clawhub": "todo", "agentpowers": "todo" },
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "optional", "clawhub": "optional", "agentpowers": "optional", "skillssh": "publish" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "todo", "clawhub": "todo", "agentpowers": "todo", "skillssh": "not_started" },
       "notes": "开发者高频需求，通用性强"
     },
     "windows-autostart-skill": {
       "tier": "t2",
       "repo": "awam-skills/windows-autostart-skill",
       "summary": "Windows 自启动管理（自带 windows-autostart.ps1 CLI，JSON 输出）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish", "skillssh": "optional" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started", "skillssh": "not_started" },
       "notes": "有 CLI、生态契合，适合运维 / Windows 向平台"
     },
     "letsencrypt-windows-skill": {
       "tier": "t2",
       "repo": "awam-skills/letsencrypt-windows-skill",
       "summary": "Windows TLS 证书（win-acme / Posh-ACME / Certify The Web 三选路由，HTTP-01/DNS-01）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "publish", "skillssh": "optional" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "not_started", "doubao": "not_started", "clawhub": "todo", "agentpowers": "not_started", "skillssh": "not_started" },
       "notes": "同类稀缺、差异化价值高"
     },
     "quicker-connector": {
       "tier": "t2",
       "repo": "awam-skills/quicker-connector",
       "summary": "OpenClaw 技能，连接 Quicker 自动化工具（读取动作库、自然语言匹配并执行动作）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "publish", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "done", "doubao": "todo", "clawhub": "done", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "publish", "agentpowers": "skip", "skillssh": "optional" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "done", "doubao": "todo", "clawhub": "done", "agentpowers": "skip", "skillssh": "not_started" },
       "notes": "明确绑定 OpenClaw 生态 → ClawHub 首选；可选 ClawMart 付费变现"
     },
     "awam-windows-backup-skill": {
       "tier": "t3",
       "repo": "awam-skills/awam-windows-backup-skill",
       "summary": "Windows 本机 Kopia 增量备份与恢复（用户目录 + 系统配置导出）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "optional", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "todo", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "optional", "agentpowers": "skip", "skillssh": "optional" },
+      "status": { "github": "done", "lobehub": "todo", "modelscope": "todo", "doubao": "todo", "clawhub": "todo", "agentpowers": "skip", "skillssh": "not_started" },
       "notes": "绑定个人目录/配置，需把路径、仓库配置参数化泛化后再发"
     },
     "wiz-migration": {
       "tier": "t3",
       "repo": "awam-skills/wiz-migration",
       "summary": "为知笔记数据迁移（导出、附件迁移、HTML 转 Markdown，自动修复附件路径）",
-      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "status": { "github": "done", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
       "notes": "产品已停运、受众极小；除非转为通用笔记迁移再发"
     },
     "stock-hots-skill": {
       "tier": "t3",
       "repo": "awam-skills/stock-hots-skill",
       "summary": "多平台热门股票榜单获取与聚合（WzSLinker 八合一聚合页首选，同花顺/通达信/东方财富/财联社直连兜底）",
-      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "skip", "agentpowers": "skip" },
-      "status": { "github": "not_started", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "optional", "modelscope": "optional", "doubao": "optional", "clawhub": "skip", "agentpowers": "skip", "skillssh": "optional" },
+      "status": { "github": "not_started", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip", "skillssh": "not_started" },
       "notes": "依赖外部榜单页/接口且部分平台直连有反爬；发布前建议把数据源参数化泛化"
     },
     "awam-todo-skill": {
       "tier": "t3",
       "repo": "awam-skills/awam-todo-skill",
       "summary": "个人待办管理：会话解析自然语言建待办 + 按日期 Markdown 存储 + 索引，支持依赖链/子任务/预案/逾期双出口/月度归档，配本地网页看板",
-      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "publish", "agentpowers": "skip" },
-      "status": { "github": "done", "lobehub": "not_started", "modelscope": "done", "doubao": "not_started", "clawhub": "done", "agentpowers": "skip" },
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "publish", "agentpowers": "skip", "skillssh": "publish" },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "done", "doubao": "not_started", "clawhub": "done", "agentpowers": "skip", "skillssh": "not_started" },
       "notes": "存储目录与编辑器已参数化（env --set storage_dir / editor.path，搬迁有校验与回滚）。2026-10-07 首次发布时打包器把 storage/、env.json、index.json 一起发上了魔搭，已修复为「只发 git 跟踪文件」（scripts/public_files.py）并替换线上内容、下载复核清除；豆包导入包已按新规则重新生成。lobehub 需先在 LobeHub 网页「提交仓库」才能 claim（CLI 无法代做）"
     }
   }
