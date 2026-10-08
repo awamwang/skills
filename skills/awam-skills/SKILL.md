@@ -27,6 +27,7 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub 三个上传型脚本已内置，命中即中止（不可逆）；skills.sh 无上传环节，不适用 |
 | 推到 GitHub 并进索引 | [发布](references/publish.md) |
 | 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包 / skills.sh 各有 [scripts/](scripts/) 下对应脚本） |
+| **发布提醒 / 漂移检测**（哪些技能本地改了但平台没跟上） | [scripts/check_publish_drift.py](scripts/check_publish_drift.py)：对技能仓做了提交、或用户问「接下来发什么」时跑；有漂移逐个问是否现在发布（见下方「发布提醒」节） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |
 | 列组织 / 索引远程 / 本机 awam 技能并对比 | [查询](references/query.md) |
@@ -103,6 +104,25 @@ rm -rf "$DST/scripts/__pycache__"
 
 两类副本是否已对齐，`scripts/preflight.py` 会逐目录比对**内容哈希**报出来（它同时看
 `~/.workbuddy/skills/` 与 `~/.agents/skills/` 两处），不用手工 diff。
+
+## 发布提醒（漂移检测）
+
+会话里对技能仓做了提交，或用户问「接下来发什么 / 哪些还没发」时，跑：
+
+```bash
+python skills/awam-skills/scripts/check_publish_drift.py
+```
+
+它对比三份数据——`docs/publishing-plan.json`（哪些平台 status=done）、`docs/repos.json`
+（本地克隆路径映射）、`docs/publishing-state.json`（各平台最近发布的 commit / version）——
+列出**本地已前进但平台没跟上**的条目。检测到漂移时用 question **逐个问用户**是否现在发布；
+确认后照常 preflight + 平台发布流程，不要默默替用户发。退出码 0=无漂移 / 1=有待发布。
+
+- **ClawHub / 魔搭 / 豆包 / skills.sh**：对应 publish 脚本成功后自动写 state；
+- **LobeHub 等网页手动发布**：发完跑 `--record <技能 key> <platform>` 补记当前 HEAD；
+- **新标 done 的平台**没有历史记录：`--record-baseline` 以当前 HEAD 批量回填基线
+  （基线之后的新提交才算待发布）；
+- 技能仓挪目录 / 换机器：手工更新 `docs/repos.json`。
 
 ## 快速对照
 

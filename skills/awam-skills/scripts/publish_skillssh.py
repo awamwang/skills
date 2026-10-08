@@ -60,6 +60,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import credentials as creds  # noqa: E402  （来源校验 + origin 读取：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import state_store  # noqa: E402  （发布状态记录，漂移检测基线：见 state_store.py）
 
 # skills/awam-skills/scripts → 索引仓根
 INDEX_ROOT = Path(__file__).resolve().parents[3]
@@ -307,7 +308,8 @@ def write_customize(skill_dir: Path) -> None:
     log("  一仓多技能时把分组写进 groupings（title/description/skills），单技能仓可整文件不提交")
 
 
-def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
+def update_plan(plan_path: Path, skill_key: str, status: str = "done",
+                skill_dir: Path | None = None) -> bool:
     """就地改 `status.skillssh`，**逐字节保留原排版**（见 plan_store.py 的说明）。"""
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     skills = plan.get("skills") or {}
@@ -318,6 +320,11 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
         log(f"  ⚠ 无法就地更新技能 `{skill_key}` 的 status.skillssh，请手动改")
         return False
     log(f"  规划已更新：skills.{skill_key}.status.skillssh = {status}（保留原排版）")
+    if status == "done" and skill_dir is not None:
+        if state_store.record_publish_from_repo(state_store.STATE_PATH, skill_dir, skill_key, "skillssh"):
+            log("  发布状态已记录（check_publish_drift.py 以此为基线）")
+        else:
+            log("  ⚠ 发布状态记录失败；可稍后用 check_publish_drift.py --record 补记")
     return True
 
 
@@ -358,7 +365,8 @@ def _update_plan_block(args, repo: str, status: str) -> None:
                 skill_key = key
                 break
     if skill_key:
-        if update_plan(plan_path, skill_key, status):
+        skill_dir = Path(args.dir).expanduser().resolve() if args.dir else None
+        if update_plan(plan_path, skill_key, status, skill_dir=skill_dir):
             refresh_view()
     else:
         log("  ⚠ 未能定位规划里的技能 key，请用 --skill 指定后单独更新")

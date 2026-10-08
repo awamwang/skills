@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import constants  # noqa: E402  （共享超时等常量：见 constants.py）
 import credentials as creds  # noqa: E402  （凭据查找 + 来源校验：见 credentials.py）
 import plan_store  # noqa: E402  （规划就地更新，保留原排版：见 plan_store.py）
+import state_store  # noqa: E402  （发布状态记录，漂移检测基线：见 state_store.py）
 import preflight_secrets  # noqa: E402  （发布前敏感串扫描：见 preflight_secrets.py）
 import public_files  # noqa: E402  （公开文件集：见 public_files.py）
 
@@ -94,7 +95,8 @@ def build_zip(skill_dir: Path, zip_path: Path, top: str,
     return n, zip_path.stat().st_size
 
 
-def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
+def update_plan(plan_path: Path, skill_key: str, status: str = "done",
+                skill_dir: Path | None = None) -> bool:
     """就地改 `status.doubao`，**逐字节保留原排版**（见 plan_store.py 的说明）。"""
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     if (plan.get("skills") or {}).get(skill_key) is None:
@@ -104,6 +106,11 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done") -> bool:
         log(f"  ⚠ 无法就地更新技能 `{skill_key}` 的 status.doubao，请手动改")
         return False
     log(f"  规划已更新：skills.{skill_key}.status.doubao = {status}（保留原排版）")
+    if status == "done" and skill_dir is not None:
+        if state_store.record_publish_from_repo(state_store.STATE_PATH, skill_dir, skill_key, "doubao"):
+            log("  发布状态已记录（check_publish_drift.py 以此为基线）")
+        else:
+            log("  ⚠ 发布状态记录失败；可稍后用 check_publish_drift.py --record 补记")
     return True
 
 
@@ -179,7 +186,7 @@ def main() -> int:
                 if k == name or k == f"{name}-skill":
                     key = k
                     break
-        if key and update_plan(plan_path, key):
+        if key and update_plan(plan_path, key, skill_dir=skill_dir):
             refresh_view()
         else:
             log("  ⚠ 未能定位规划里的技能 key，请用 --skill 指定")

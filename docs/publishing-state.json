@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-08",
+  "skills": {
+    "ssh-deploy-skill": {
+      "github": {
+        "commit": "db5508c",
+        "version": "1.2.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "lobehub": {
+        "commit": "db5508c",
+        "version": "1.2.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "modelscope": {
+        "commit": "db5508c",
+        "version": "1.2.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "doubao": {
+        "commit": "db5508c",
+        "version": "1.2.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "skillssh": {
+        "commit": "db5508c",
+        "version": "1.2.0",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "awam-git-skill": {
+      "github": {
+        "commit": "4abd09f",
+        "version": "0.0.1",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "skillssh": {
+        "commit": "4abd09f",
+        "version": "0.0.1",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "github-organize": {
+      "github": {
+        "commit": "b0000b4",
+        "version": "0.0.1",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "skillssh": {
+        "commit": "b0000b4",
+        "version": "0.0.1",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "letsencrypt-windows-skill": {
+      "github": {
+        "commit": "a5c2d04",
+        "version": "0.0.1",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "quicker-connector": {
+      "github": {
+        "commit": "6b414be",
+        "version": "1.5.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "modelscope": {
+        "commit": "6b414be",
+        "version": "1.5.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "clawhub": {
+        "commit": "6b414be",
+        "version": "1.5.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "skillssh": {
+        "commit": "6b414be",
+        "version": "1.5.0",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "awam-windows-backup-skill": {
+      "github": {
+        "commit": "e8f8042",
+        "version": "0.0.2",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "wiz-migration": {
+      "github": {
+        "commit": "723d5f0",
+        "version": "1.0.0",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    },
+    "awam-todo-skill": {
+      "github": {
+        "commit": "126af22",
+        "version": "0.6.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "lobehub": {
+        "commit": "126af22",
+        "version": "0.6.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "modelscope": {
+        "commit": "126af22",
+        "version": "0.6.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "clawhub": {
+        "commit": "126af22",
+        "version": "0.6.0",
+        "at": "2026-10-08",
+        "baseline": true
+      },
+      "skillssh": {
+        "commit": "126af22",
+        "version": "0.6.0",
+        "at": "2026-10-08",
+        "baseline": true
+      }
+    }
+  }
+}

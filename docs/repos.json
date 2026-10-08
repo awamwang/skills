@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-08",
+  "note": "技能 key → 本地克隆路径映射，供发布漂移检测（check_publish_drift.py）使用；path 为 null 表示本机未找到克隆；换机器 / 挪目录时手工更新本文件",
+  "repos": {
+    "ssh-deploy-skill": { "path": "G:/Projects/19AI/skills/ssh-deploy-skill" },
+    "awam-git-skill": { "path": "G:/Projects/19AI/skills/awam-git" },
+    "github-organize": { "path": "G:/Projects/19AI/skills/github-organize" },
+    "letsencrypt-windows-skill": { "path": "G:/Projects/19AI/skills/letsencrypt-windows" },
+    "quicker-connector": { "path": "C:/Users/Administrator/.agents/skills/awam/quicker-connector" },
+    "awam-windows-backup-skill": { "path": "G:/Projects/19AI/skills/awam-windows-backup" },
+    "awam-todo-skill": { "path": "G:/Projects/19AI/skills/awam-todo" },
+    "wiz-migration": { "path": "C:/Users/Administrator/.codebuddy/skills/wiz-migration" },
+    "stock-hots-skill": { "path": "G:/Projects/19AI/skills/stock/stock-hots" },
+    "awam-shandianshuo-skill": { "path": "G:/Projects/19AI/skills/awam-shandianshuo" },
+    "windows-autostart-skill": { "path": null, "note": "本机未找到克隆（2026-10-08 深扫 G:\\ 与用户目录无果）" }
+  }
+}
