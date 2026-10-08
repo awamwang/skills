@@ -134,11 +134,8 @@ def child_env(strip_telemetry_off: bool) -> dict:
 
 
 def run(cmd: list[str], cwd: Path | None, env: dict, timeout: int) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        cmd, cwd=str(cwd) if cwd else None, capture_output=True, text=True,
-        encoding="utf-8", errors="replace", env=env, timeout=timeout,
-        stdin=subprocess.DEVNULL,
-    )
+    import runutil
+    return runutil.run_utf8(cmd, cwd=cwd, env=env, timeout=timeout)
 
 
 def make_project_dir() -> Path:
@@ -284,11 +281,10 @@ def write_customize(skill_dir: Path) -> None:
     （skills.sh 会直接解析它，写非法 JSON 会连累仓库页），改好再提交。
     """
     try:
-        out = subprocess.run(
-            ["git", "-C", str(skill_dir), "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=constants.GIT_FAST,
-        )
-        root = Path(out.stdout.strip()) if out.returncode == 0 else skill_dir
+        import runutil
+        out = runutil.run_git(skill_dir, "rev-parse", "--show-toplevel",
+                              timeout=constants.GIT_FAST)
+        root = Path((out.stdout or "").strip()) if out.returncode == 0 else skill_dir
     except Exception:
         root = skill_dir
     target = root / "skills.sh.json"

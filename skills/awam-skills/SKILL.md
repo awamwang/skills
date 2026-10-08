@@ -1,6 +1,6 @@
 ---
 name: awam-skills
-version: 0.2.0
+version: 0.2.1
 description: >-
   按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
@@ -27,8 +27,9 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub / LobeHub 上传型脚本已内置，命中即中止；skills.sh 无上传环节，不适用 |
 | **提升 frontmatter version**（`SKILL.md` + `SKILL.zh-CN.md` 同步；不提交） | [scripts/bump_version.py](scripts/bump_version.py) |
 | 推到 GitHub 并进索引 | [发布](references/publish.md)；Topics/description/state 用 [scripts/publish_github.py](scripts/publish_github.py) |
-| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)；一键编排 [scripts/release.py](scripts/release.py) |
+| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)；一键编排 [scripts/release.py](scripts/release.py)（魔搭/ClawHub/skills.sh 默认可并行） |
 | **发布后线上复核** | [scripts/verify_publish.py](scripts/verify_publish.py) |
+| **索引仓 state/视图提交助手**（白名单 stage；需 `--yes` 才 commit） | [scripts/commit_publish_state.py](scripts/commit_publish_state.py) |
 | **发布提醒 / 漂移检测**（哪些技能本地改了但平台没跟上） | [scripts/check_publish_drift.py](scripts/check_publish_drift.py)：对技能仓做了提交、或用户问「接下来发什么」时跑；有漂移逐个问是否现在发布（见下方「发布提醒」节） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |

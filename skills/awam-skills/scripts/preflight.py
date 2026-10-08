@@ -83,13 +83,11 @@ class Report:
 
 def git(skill_dir: Path, *args: str) -> tuple[int, str]:
     try:
-        r = subprocess.run(
-            ["git", "-C", str(skill_dir), *args],
-            capture_output=True, text=True, timeout=constants.GIT_OP,
-        )
+        import runutil
+        r = runutil.run_git(skill_dir, *args, timeout=constants.GIT_OP)
     except (OSError, subprocess.SubprocessError) as e:
         return 1, str(e)
-    return r.returncode, (r.stdout or r.stderr).strip()
+    return r.returncode, ((r.stdout or "") or (r.stderr or "")).strip()
 
 
 def read_skill_md(skill_dir: Path) -> Path | None:

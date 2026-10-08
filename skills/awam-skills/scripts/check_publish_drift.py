@@ -44,11 +44,8 @@ def log(msg: str) -> None:
 
 
 def _git(repo_dir: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["git", "-C", str(repo_dir), *args],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=constants.GIT_OP,
-    )
+    import runutil
+    return runutil.run_git(repo_dir, *args, timeout=constants.GIT_OP)
 
 
 def git_info(repo_dir: Path) -> dict:

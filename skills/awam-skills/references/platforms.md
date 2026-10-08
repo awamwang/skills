@@ -89,9 +89,10 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 | **AgentPowers** | 国际 | MCP 标准提交（8 层安全扫描） | 账号 / 后台 | 高品质 / 付费向（windows-autostart、letsencrypt 等） |
 | **skills.sh** | 国际 | [publish_skillssh.py](../scripts/publish_skillssh.py)（skills CLI 安装遥测触发收录） | 无需凭据 | 一切已公开技能（find-skills 生态默认发现面） |
 | **GitHub 收口** | — | [publish_github.py](../scripts/publish_github.py) | `gh` 已登录 | Topics / description / state |
-| **多平台编排** | — | [release.py](../scripts/release.py) | 同上各平台前置 | `preflight → publish_* → verify_publish` |
+| **多平台编排** | — | [release.py](../scripts/release.py) | 同上各平台前置 | 一次 preflight；魔搭/ClawHub/skills.sh 默认并行（`--no-plan` 后串行回写）；`--no-parallel` 可关 |
 | **升版本** | — | [bump_version.py](../scripts/bump_version.py) | — | 同步 `SKILL.md` / `SKILL.zh-CN.md`（不提交） |
 | **发布后复核** | — | [verify_publish.py](../scripts/verify_publish.py) | 各平台凭据 / CLI | 线上版本与文件清单 |
+| **索引仓 state 提交** | — | [commit_publish_state.py](../scripts/commit_publish_state.py) | 用户明确 `--yes` | 只 stage `publishing-state.json` + 视图；不 push |
 
 ## 凭据管理（通用）
 
@@ -358,10 +359,15 @@ python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --custom
 # 升版本（只改文件，需自行 commit + push）
 python skills/awam-skills/scripts/bump_version.py --dir <技能仓> --part patch
 
-# 编排：preflight → 按规划 plan=publish 的平台依次发 → verify
+# 编排：一次 preflight → 魔搭/ClawHub/skills.sh 并行 → 其它串行 → verify
 python skills/awam-skills/scripts/release.py --dir <技能仓> --dry-run
 python skills/awam-skills/scripts/release.py --dir <技能仓>
 python skills/awam-skills/scripts/release.py --dir <技能仓> --platforms github,modelscope,clawhub,lobehub,skillssh
+python skills/awam-skills/scripts/release.py --dir <技能仓> --no-parallel   # 调试时关闭并行
+
+# 发布后把索引仓 state + 视图提交（预览 → 确认）
+python skills/awam-skills/scripts/commit_publish_state.py
+python skills/awam-skills/scripts/commit_publish_state.py --yes
 ```
 
 多个技能一起发时，**先全部预检、再逐个正式发**，不要边发边发现问题：

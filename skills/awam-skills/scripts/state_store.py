@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 from datetime import date
@@ -41,14 +40,12 @@ def load_state(path: Path = STATE_PATH) -> dict:
 
 def git_head(repo_dir: Path) -> str | None:
     """当前 HEAD 短哈希；不是 git 仓 / 尚无提交时返回 None。"""
-    out = subprocess.run(
-        ["git", "-C", str(repo_dir), "rev-parse", "--short", "HEAD"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=constants.GIT_FAST,
-    )
+    import runutil
+    out = runutil.run_git(repo_dir, "rev-parse", "--short", "HEAD",
+                          timeout=constants.GIT_FAST)
     if out.returncode != 0:
         return None
-    return out.stdout.strip() or None
+    return (out.stdout or "").strip() or None
 
 
 def frontmatter_version(skill_dir: Path) -> str | None:

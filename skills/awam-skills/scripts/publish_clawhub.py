@@ -168,11 +168,10 @@ def read_frontmatter_version(skill_dir: Path) -> str | None:
 
 def git_commit(skill_dir: Path) -> str | None:
     try:
-        out = subprocess.run(
-            ["git", "-C", str(skill_dir), "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, timeout=constants.GIT_FAST,
-        )
-        return out.stdout.strip() or None
+        import runutil
+        out = runutil.run_git(skill_dir, "rev-parse", "--short", "HEAD",
+                              timeout=constants.GIT_FAST)
+        return (out.stdout or "").strip() or None
     except Exception:
         return None
 
@@ -237,7 +236,9 @@ def scan_staging(root: Path) -> None:
 
 
 def run(cmd: list[str], env: dict, timeout: int = constants.CLI_RUN_DEFAULT) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=timeout)
+    # 必须 UTF-8：Windows 默认 GBK 会在中文输出时炸掉读取线程（stdout 变 None）
+    import runutil
+    return runutil.run_utf8(cmd, env=env, timeout=timeout)
 
 
 def check_channel(clawhub: list[str], env: dict) -> str:

@@ -28,3 +28,9 @@ SKILLSSH_PAGE = 30      # skills.sh 页面探测单次 HTTP 超时（收录轮�
 
 # --- 其它 ---
 PLAN_SCRIPT = 120    # 调 plan_skills.py 刷新视图
+
+# --- release 并行编排（秒） ---
+# 单平台子进程超时：取 ClawHub 上传上限 + 余量（魔搭/skills.sh 通常更短）
+RELEASE_PLATFORM = CLI_PUBLISH + 120
+# 可并行的上传/收录平台（各自处理代理；plan/state 由编排器串行回写）
+RELEASE_PARALLEL_PLATFORMS = ("modelscope", "clawhub", "skillssh")

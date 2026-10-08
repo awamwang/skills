@@ -34,14 +34,40 @@ def log(msg: str) -> None:
 
 def run_utf8(cmd: list[str], *, cwd: Path | str | None = None,
              timeout: int | None = None, env: dict | None = None,
-             input_text: str | None = None) -> subprocess.CompletedProcess:
-    """跑子进程并用 UTF-8 解码 stdout/stderr（errors=replace），避免 GBK 崩线程。"""
-    return subprocess.run(
-        cmd, cwd=str(cwd) if cwd else None, env=env,
-        capture_output=True, timeout=timeout,
-        encoding="utf-8", errors="replace",
-        stdin=subprocess.DEVNULL if input_text is None else None,
-        input=input_text,
+             input_text: str | None = None,
+             capture: bool = True) -> subprocess.CompletedProcess:
+    """跑子进程并用 UTF-8 解码 stdout/stderr（errors=replace），避免 GBK 崩线程。
+
+    - `capture=True`（默认）：捕获输出为 str
+    - `capture=False`：继承当前终端（实时进度）；此时不要依赖返回的 stdout
+    二进制管道（`git archive | tar`）请直接用 `subprocess.run` 字节模式，勿走本函数。
+    """
+    kwargs: dict = {
+        "cwd": str(cwd) if cwd else None,
+        "env": env,
+        "timeout": timeout,
+        "encoding": "utf-8",
+        "errors": "replace",
+    }
+    if capture:
+        kwargs["capture_output"] = True
+        if input_text is not None:
+            kwargs["input"] = input_text
+        else:
+            kwargs["stdin"] = subprocess.DEVNULL
+    else:
+        if input_text is not None:
+            kwargs["input"] = input_text
+            kwargs["text"] = True
+    return subprocess.run(cmd, **kwargs)
+
+
+def run_git(repo_dir: Path | str, *args: str,
+            timeout: int | None = None) -> subprocess.CompletedProcess:
+    """在指定仓跑 `git -C <repo> …`，UTF-8 捕获输出。"""
+    return run_utf8(
+        ["git", "-C", str(repo_dir), *args],
+        timeout=timeout if timeout is not None else constants.GIT_OP,
     )
 
 

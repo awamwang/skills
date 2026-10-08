@@ -239,11 +239,10 @@ def git_remote_repo(skill_dir: Path) -> str | None:
     import subprocess
 
     try:
-        out = subprocess.run(
-            ["git", "-C", str(skill_dir), "remote", "get-url", "origin"],
-            capture_output=True, text=True, timeout=constants.GIT_FAST,
-        )
-        url = out.stdout.strip()
+        import runutil
+        out = runutil.run_git(skill_dir, "remote", "get-url", "origin",
+                              timeout=constants.GIT_FAST)
+        url = (out.stdout or "").strip()
     except (OSError, subprocess.SubprocessError):
         return None
     if not url:
