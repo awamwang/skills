@@ -28,7 +28,7 @@
 |------|:----:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | `ssh-deploy-skill` | 最值得 | ✅ | ✅ | ✅ | ✅ | ◐ | — | ✅ |
 | `awam-git-skill` | 最值得 | ✅ | ○ | ○ | ○ | ◐ | ◐ | ✅ |
-| `awam-shandianshuo-skill` | 需改造 | ○ | — | ○ | ○ | — | — | — |
+| `awam-shandianshuo-skill` | 需改造 | — | — | — | — | — | — | — |
 | `github-organize` | 最值得 | ✅ | ○ | ○ | ◐ | ◐ | ◐ | ✅ |
 | `windows-autostart-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
 | `letsencrypt-windows-skill` | 实用 | ✅ | ◐ | ○ | ○ | ◐ | ○ | ○ |
@@ -76,14 +76,14 @@
 
 - 仓库：`awam-skills/awam-shandianshuo-skill`
 - 简介：读取与更新闪电说（Shandianshuo）模型配置：供应商/模型/槽位 CRUD、开通关闭、备份+原子写
-- 规划：绑定闪电说产品配置路径与 v3 schema；脚本已支持 --config 参数化，正式发布前建议再泛化
+- 规划：2026-10-08 已完成泛化改造（配置自动发现 SHANDIANSHUO_CONFIG→APPDATA→LOCALAPPDATA、schema v3 降级提示、文档去个人化，本地提交 9b9ed05）；但属 Awam 个人本机工具类技能，标记不发布（不上传 GitHub、不发布各平台）
 
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
-| GitHub（基础层） | 推荐发布 | ○ 未发布 |
+| GitHub（基础层） | 不建议 | — 不建议 |
 | LobeHub | 不建议 | — 不建议 |
-| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
-| 豆包技能中心 | 推荐发布 | ○ 未发布 |
+| 魔搭 ModelScope | 不建议 | — 不建议 |
+| 豆包技能中心 | 不建议 | — 不建议 |
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
 | skills.sh | 不建议 | — 不建议 |

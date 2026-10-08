@@ -90,9 +90,9 @@
       "tier": "t3",
       "repo": "awam-skills/awam-shandianshuo-skill",
       "summary": "读取与更新闪电说（Shandianshuo）模型配置：供应商/模型/槽位 CRUD、开通关闭、备份+原子写",
-      "plan": { "github": "publish", "lobehub": "skip", "modelscope": "publish", "doubao": "publish", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
-      "status": { "github": "not_started", "lobehub": "skip", "modelscope": "not_started", "doubao": "not_started", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
-      "notes": "绑定闪电说产品配置路径与 v3 schema；脚本已支持 --config 参数化，正式发布前建议再泛化"
+      "plan": { "github": "skip", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "status": { "github": "skip", "lobehub": "skip", "modelscope": "skip", "doubao": "skip", "clawhub": "skip", "agentpowers": "skip", "skillssh": "skip" },
+      "notes": "2026-10-08 已完成泛化改造（配置自动发现 SHANDIANSHUO_CONFIG→APPDATA→LOCALAPPDATA、schema v3 降级提示、文档去个人化，本地提交 9b9ed05）；但属 Awam 个人本机工具类技能，标记不发布（不上传 GitHub、不发布各平台）"
     },
     "github-organize": {
       "tier": "t1",
