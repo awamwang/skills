@@ -121,18 +121,11 @@ def refresh_view() -> None:
     视图刷新失败时用户以为成功了（与 publish_modelscope 的 refresh_view 对齐）。
     """
     try:
-        out = subprocess.run(
-            [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=constants.PLAN_SCRIPT
-        )
+        import runutil
+        runutil.refresh_plan_view()
     except (OSError, subprocess.SubprocessError) as e:
         log(f"  ⚠ 刷新视图失败（无法执行）：{e}")
         return
-    if out.returncode == 0:
-        log(f"  视图已刷新：{out.stdout.strip() or 'docs/publishing-plan.md'}")
-    else:
-        detail = (out.stderr or out.stdout or "").strip()
-        log(f"  ⚠ 刷新视图失败（exit={out.returncode}）：{detail}")
-
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="为豆包技能中心准备导入包")

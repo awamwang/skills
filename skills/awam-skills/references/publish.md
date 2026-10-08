@@ -41,11 +41,19 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓>
 
 ### 2. Topics 与 description
 
+推荐一键收口（Topics + description + 规划 status.github + state）：
+
+```bash
+python skills/awam-skills/scripts/publish_github.py --dir <技能仓>
+```
+
+或手搓：
+
 ```bash
 gh repo edit "awam-skills/<repo_name>" --add-topic skill --add-topic skills --description "<description>"
 ```
 
-若用户选定了分类且该分类有 `cat-*` 类 topic，一并 `--add-topic`。
+若用户选定了分类且该分类有 `cat-*` 类 topic，一并 `--add-topic`（`publish_github.py --add-topic cat-ops`）。
 
 ### 3. 更新索引仓 overrides
 

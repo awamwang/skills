@@ -278,13 +278,8 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done",
 
 def refresh_view() -> None:
     """调用 plan_skills.py 刷新人读视图（不手改 md）。"""
-    out = subprocess.run(
-        [sys.executable, str(PLAN_SCRIPT)], capture_output=True, text=True, timeout=constants.PLAN_SCRIPT
-    )
-    if out.returncode == 0:
-        log(f"  视图已刷新：{out.stdout.strip() or 'docs/publishing-plan.md'}")
-    else:
-        log(f"  ⚠ 刷新视图失败：{out.stderr.strip()}")
+    import runutil
+    runutil.refresh_plan_view()
 
 
 def _run(args) -> int:

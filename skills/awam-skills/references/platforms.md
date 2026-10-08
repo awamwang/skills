@@ -34,6 +34,7 @@ python skills/awam-skills/scripts/preflight.py --dir <技能仓> --json     # �
 | frontmatter `name` / `version` / `description` | 魔搭与 LobeHub 都硬性要求；**老仓常只缺 `version`**（实测 windows-autostart） |
 | BOM / CRLF | CRLF 会让魔搭报 `must contain 'name' field`（实际是行尾问题）。本机多数仓 `core.autocrlf=true`，工作区必然 CRLF —— 这种情况 preflight 判为正常（发布时会自动转 LF），只在 autocrlf 未开时才提示 |
 | 私密文件是否已被 git 跟踪 → FAIL | 发布包已自动排除，但仓库里已经泄漏，得 `git rm --cached` + 补 `.gitignore` |
+| 疑似本机绝对路径 → WARN | 真实 `C:\Users\某人\` / 本仓绝对路径写进文档会泄漏布局（占位 `<技能目录>` 放过） |
 | 已安装副本与索引仓**内容哈希**是否一致 | 复制型副本会过期，照它读文档 / 跑脚本会走弯路（实测踩到） |
 
 ### 敏感串扫描（发布包最后一关，不可逆）
@@ -81,12 +82,16 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 
 | 平台 | 区域 | 发布通道 | 前置 | 适合技能 |
 |------|------|----------|------|----------|
-| **LobeHub** | 国际 | SKILL.md bundle + CLI `npx -y @lobehub/market-cli@0.0.41` | 账号 + 网页提交仓库 | 跨 agent 通用型（ssh-deploy、awam-git、github-organize） |
+| **LobeHub** | 国际 | [publish_lobehub.py](../scripts/publish_lobehub.py)（multipart；绕过 CLI Content-Type / CF 1010） | 账号 + 网页提交仓库 + market-cli 登录 | 跨 agent 通用型（ssh-deploy、awam-git、github-organize） |
 | **魔搭 ModelScope** | 国内 | [publish_modelscope.py](../scripts/publish_modelscope.py)（zip→file_id→创建） | 账号 + `MODELSCOPE_API_TOKEN` | 通用与运维技能均合适 |
 | **豆包技能中心** | 国内 | [publish_doubao.py](../scripts/publish_doubao.py) 打包 + 客户端导入 | 豆包客户端 | 个人工作流与通用技能；成本最低 |
 | **ClawHub** | 国际 | [publish_clawhub.py](../scripts/publish_clawhub.py)（封装 `clawhub` CLI） | npm 包 `clawhub` + 设备流登录 | OpenClaw 生态技能（quicker-connector） |
 | **AgentPowers** | 国际 | MCP 标准提交（8 层安全扫描） | 账号 / 后台 | 高品质 / 付费向（windows-autostart、letsencrypt 等） |
 | **skills.sh** | 国际 | [publish_skillssh.py](../scripts/publish_skillssh.py)（skills CLI 安装遥测触发收录） | 无需凭据 | 一切已公开技能（find-skills 生态默认发现面） |
+| **GitHub 收口** | — | [publish_github.py](../scripts/publish_github.py) | `gh` 已登录 | Topics / description / state |
+| **多平台编排** | — | [release.py](../scripts/release.py) | 同上各平台前置 | `preflight → publish_* → verify_publish` |
+| **升版本** | — | [bump_version.py](../scripts/bump_version.py) | — | 同步 `SKILL.md` / `SKILL.zh-CN.md`（不提交） |
+| **发布后复核** | — | [verify_publish.py](../scripts/verify_publish.py) | 各平台凭据 / CLI | 线上版本与文件清单 |
 
 ## 凭据管理（通用）
 
@@ -120,10 +125,20 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 
 **identifier 必须是 `owner-repo` 格式**（GitHub `owner/repo` 把 `/` 换成 `-`，如 `awam-skills-ssh-deploy-skill`），**不是**裸 repo 名——裸名和错误 owner 都会导致 claim "Skill not found"。
 
+**推荐一键脚本**（2026-10-08 起）：
+
+```bash
+python skills/awam-skills/scripts/publish_lobehub.py --dir <技能仓> --dry-run
+python skills/awam-skills/scripts/publish_lobehub.py --dir <技能仓>
+```
+
+脚本用 curl multipart + 浏览器 UA 直传（绕过 market-cli Content-Type 坑与 Cloudflare 1010），
+成功后写规划 / state。凭据读 `~/.lobehub-market/user-credentials.json` 的 `accessToken`。
+
 1. **前置：网页提交仓库（必须，CLI 无法代做）。** 技能仓库公开后，用户打开 LobeHub 创作者主页（官方指引 `lobehub.com/zh/docs/usage/community/become-a-creator`）→「技能」区域 →「提交仓库」→ 选择该 GitHub 仓库。提交后技能进入 marketplace，CLI 才能认领。
 2. 连接 GitHub：`npx -y @lobehub/market-cli@0.0.41 github connect`；`github status` 应显示 `✓ GitHub connected`。
 3. 认领：`npx -y @lobehub/market-cli@0.0.41 skill claim <owner-repo>`。已拥有时返回 "You already own this skill"（正常，跳过即可）。
-4. 发布：`npx -y @lobehub/market-cli@0.0.41 skill publish --dir <技能目录> --identifier <owner-repo>`。
+4. 发布：优先 `publish_lobehub.py`；或手工 `npx -y @lobehub/market-cli@0.0.41 skill publish …`（见下方踩坑）。
 
 > **版本锁定**：`@lobehub/market-cli` 一律固定 `@0.0.41`，不拉 latest —— npm 包被劫持/投毒时会直接执行恶意代码。升级前先 `npm view @lobehub/market-cli version` 核对 integrity 再改。
 
@@ -335,7 +350,19 @@ python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --custom
 | 豆包 | 客户端「我的技能」里看条目 | 无 API，只能人工看；导入成功后回跑 `--mark-done` |
 | skills.sh | `GET https://skills.sh/<owner>/<repo>`（脚本 `--verify-only`） | 页面 200 即已收录；404 = 索引还没上线，稍后再确认，勿反复重装刷安装量 |
 
-## 批量发布
+## 批量 / 一键发布
+
+单个技能多平台（推荐）：
+
+```bash
+# 升版本（只改文件，需自行 commit + push）
+python skills/awam-skills/scripts/bump_version.py --dir <技能仓> --part patch
+
+# 编排：preflight → 按规划 plan=publish 的平台依次发 → verify
+python skills/awam-skills/scripts/release.py --dir <技能仓> --dry-run
+python skills/awam-skills/scripts/release.py --dir <技能仓>
+python skills/awam-skills/scripts/release.py --dir <技能仓> --platforms github,modelscope,clawhub,lobehub,skillssh
+```
 
 多个技能一起发时，**先全部预检、再逐个正式发**，不要边发边发现问题：
 
@@ -349,6 +376,7 @@ python skills/awam-skills/scripts/publish_doubao.py    --dir <仓A>
 
 # 3) 逐个正式发（去掉 --dry-run；这一步才会写规划并刷新视图）
 python skills/awam-skills/scripts/publish_modelscope.py --dir <仓A>
+# 或直接 release.py --dir <仓A>
 ```
 
 干跑阶段会打印「发布文件集：N 个（来源：…）」与被打包根跳过的文件 —— **先看这一行**

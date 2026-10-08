@@ -296,6 +296,66 @@ def check_text_hygiene(skill_dir: Path, skill_md: Path | None, rep: Report) -> N
     rep.add("pass", "文本卫生（无 BOM / LF）")
 
 
+# 本机绝对路径：占位符（含 <…>）放过；真实用户目录要 WARN（发布包会泄漏机器信息）
+_ABS_USER_WIN = re.compile(
+    r"(?i)[A-Z]:\\Users\\(?!<)([A-Za-z0-9._-]+)\\"
+)
+_ABS_USER_POSIX = re.compile(
+    r"(?i)(?:/Users|/home)/(?!<)([A-Za-z0-9._-]+)/"
+)
+# 文本扫描后缀
+_TEXT_SUFFIXES = {
+    ".md", ".txt", ".py", ".js", ".ts", ".json", ".yml", ".yaml",
+    ".toml", ".cmd", ".ps1", ".sh", ".html", ".css", ".mdc",
+}
+
+
+def check_local_path_leak(skill_dir: Path, rep: Report) -> None:
+    """扫描将进发布包的文本文件，找疑似本机绝对路径（真实用户目录）。
+
+    2026-10-08：awam-todo 的 prompt 文档曾写入 `G:\\Projects\\…\\awam-todo\\…`，
+    发上公开平台等于泄漏本机布局。占位写法（`<技能目录>` / `C:\\Users\\<用户名>`）放过。
+    """
+    files, root, _source, _excluded, _outside = public_files.pack_files(skill_dir)
+    if root is None or not files:
+        return
+    hits: list[str] = []
+    skill_abs = str(skill_dir.resolve())
+    skill_abs_alt = skill_abs.replace("/", "\\")
+    for p in files:
+        if p.suffix.lower() not in _TEXT_SUFFIXES and p.name not in (".cursorrules",):
+            continue
+        try:
+            if p.stat().st_size > 1_500_000:
+                continue
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        rel = p.relative_to(root).as_posix()
+        for rx in (_ABS_USER_WIN, _ABS_USER_POSIX):
+            for m in rx.finditer(text):
+                user = m.group(1)
+                if user.lower() in ("user", "username", "yourname", "name"):
+                    continue
+                hits.append(f"{rel}: …Users/{user}/…")
+        # 整仓绝对路径原文出现在文档里（非占位）
+        if skill_abs in text or skill_abs_alt in text:
+            hits.append(f"{rel}: 含本仓绝对路径")
+        if len(hits) >= 12:
+            break
+    # 去重保序
+    seen: set[str] = set()
+    uniq = [h for h in hits if not (h in seen or seen.add(h))]
+    if uniq:
+        rep.add(
+            "warn", "发布包无本机绝对路径",
+            f"{len(uniq)} 处疑似泄漏（如 {uniq[0]}）。请改成 `<技能目录>` / "
+            "`C:\\Users\\<用户名>` 等占位后再发",
+        )
+    else:
+        rep.add("pass", "发布包无本机绝对路径")
+
+
 def check_public_files(skill_dir: Path, rep: Report) -> None:
     if not skill_dir.is_dir():
         return
@@ -414,6 +474,7 @@ def inspect(skill_dir: Path) -> Report:
     check_frontmatter(skill_md, rep)
     check_text_hygiene(skill_dir, skill_md, rep)
     check_public_files(skill_dir, rep)
+    check_local_path_leak(skill_dir, rep)
     check_installed_copy(skill_dir, rep)
     return rep
 

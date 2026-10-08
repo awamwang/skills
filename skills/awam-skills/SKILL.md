@@ -1,6 +1,6 @@
 ---
 name: awam-skills
-version: 0.1.0
+version: 0.2.0
 description: >-
   按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
@@ -23,10 +23,12 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | 用户意图 | 走哪条 |
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
-| **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、会不会夹带私密数据） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
-| **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub 三个上传型脚本已内置，命中即中止（不可逆）；skills.sh 无上传环节，不适用 |
-| 推到 GitHub 并进索引 | [发布](references/publish.md) |
-| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)（ClawHub / 魔搭 / 豆包 / skills.sh 各有 [scripts/](scripts/) 下对应脚本） |
+| **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、私密夹带、本机绝对路径） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
+| **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub / LobeHub 上传型脚本已内置，命中即中止；skills.sh 无上传环节，不适用 |
+| **提升 frontmatter version**（`SKILL.md` + `SKILL.zh-CN.md` 同步；不提交） | [scripts/bump_version.py](scripts/bump_version.py) |
+| 推到 GitHub 并进索引 | [发布](references/publish.md)；Topics/description/state 用 [scripts/publish_github.py](scripts/publish_github.py) |
+| 发布到第三方平台 / 更新发布规划 | [平台发布](references/platforms.md)；一键编排 [scripts/release.py](scripts/release.py) |
+| **发布后线上复核** | [scripts/verify_publish.py](scripts/verify_publish.py) |
 | **发布提醒 / 漂移检测**（哪些技能本地改了但平台没跟上） | [scripts/check_publish_drift.py](scripts/check_publish_drift.py)：对技能仓做了提交、或用户问「接下来发什么」时跑；有漂移逐个问是否现在发布（见下方「发布提醒」节） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |
@@ -73,14 +75,19 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
    `python skills/awam-skills/scripts/preflight.py --dir <技能仓>`。
    它一次查完「发出去就收不回」的本机问题：不是 git 仓 / 工作区有未提交改动 / 本地领先远程
    （发的内容与 GitHub 对不上）/ frontmatter 缺 `version`（魔搭硬要求）/ 打包根定不下来
-   / 私密文件已被 git 跟踪 / 索引仓副本与安装副本内容不一致。
+   / 私密文件已被 git 跟踪 / 疑似本机绝对路径 / 索引仓副本与安装副本内容不一致。
    结果 `FAIL` 时**不要发布**，先处理。
-5. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
-6. **平台发布 / 规划更新**走 [references/platforms.md](references/platforms.md)；每完成一个平台发布，更新 `docs/publishing-plan.json` 的 `status` 并跑 [scripts/plan_skills.py](scripts/plan_skills.py) 刷新视图。ClawHub 用 [scripts/publish_clawhub.py](scripts/publish_clawhub.py) 一键完成「干净目录 → 发布 → 刷新规划」。
+5. **升版本**用 [scripts/bump_version.py](scripts/bump_version.py)（只改 frontmatter，不提交）；
+   commit + push 技能仓后，再发平台。
+6. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
+7. **平台发布 / 规划更新**优先走 [scripts/release.py](scripts/release.py) 编排
+   （内部调 preflight + 各 `publish_*.py` + `verify_publish.py`）；
+   单平台仍可直接跑对应脚本，细节见 [references/platforms.md](references/platforms.md)。
+   每完成一个平台发布，脚本会更新 `docs/publishing-plan.json` 的 `status` 并刷新视图。
    **凭据不要问用户**：由 [scripts/credentials.py](scripts/credentials.py) 按固定顺序自动查找（首选 `~/.workbuddy/secrets/<platform>.json`）；缺凭据时才提示用户去补哪个文件。排查用 `--show-credentials`（脱敏）。
    **依赖缺失先跑** [scripts/setup_env.py](scripts/setup_env.py)：魔搭发布走官方 SDK（`modelscope_hub`），首次使用需装依赖；脚本幂等，`--check` 只检测。
    **发布源必须是索引仓里的技能目录**，不要用 `~/.workbuddy/skills/` 下的安装副本 —— 那里混着宿主注入的元数据，且脱离 git 后安全兜底只剩黑名单。
-7. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
+8. 不主动 `git commit` / `git push` 索引仓，除非用户明确要求；技能仓的首次 push 仅在**发布**流程且检测到远程无提交时执行。
 
 ## 本机发现（可选）
 
@@ -118,8 +125,9 @@ python skills/awam-skills/scripts/check_publish_drift.py
 列出**本地已前进但平台没跟上**的条目。检测到漂移时用 question **逐个问用户**是否现在发布；
 确认后照常 preflight + 平台发布流程，不要默默替用户发。退出码 0=无漂移 / 1=有待发布。
 
-- **ClawHub / 魔搭 / 豆包 / skills.sh**：对应 publish 脚本成功后自动写 state；
-- **LobeHub 等网页手动发布**：发完跑 `--record <技能 key> <platform>` 补记当前 HEAD；
+- **ClawHub / 魔搭 / 豆包 / LobeHub / skills.sh / GitHub 收口**：对应 publish 脚本成功后自动写 state；
+- **仍须网页手动的步骤**（LobeHub 首次「提交仓库」claim、豆包客户端导入）：完成后跑
+  `check_publish_drift.py --record <技能 key> <platform>` 或豆包脚本 `--mark-done`；
 - **新标 done 的平台**没有历史记录：`--record-baseline` 以当前 HEAD 批量回填基线
   （基线之后的新提交才算待发布）；
 - 技能仓挪目录 / 换机器：手工更新 `docs/repos.json`。
@@ -129,12 +137,14 @@ python skills/awam-skills/scripts/check_publish_drift.py
 | 步骤 | 创建 | 发布 | 查询 | 平台发布 |
 |------|------|------|------|----------|
 | 跑 `preflight.py` | — | ✅ **发布前必跑** | — | ✅ **发布前必跑** |
+| `bump_version.py` | — | ✅ 升版本时 | — | ✅ 发魔搭/LobeHub/ClawHub 前 |
 | 本地脚手架 | ✅ | — | — | — |
 | `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — | — | — |
 | push 技能仓内容 | ❌ | ✅ 仅当远程无提交 | — | — |
-| Topics / description | ❌（可留到发布） | ✅ | — | — |
+| Topics / description（`publish_github.py`） | ❌（可留到发布） | ✅ | — | ✅（编排内会跑） |
 | 改 `skills.overrides.json` | ❌ | ✅ | ❌ | — |
 | 本地 `sync_skills.py` | ❌ | ❌（交给 Actions） | ❌ | — |
 | 跑 `query_skills.py` | — | — | ✅ 必跑 | — |
-| 发布到第三方平台 | — | — | — | ✅ platforms.md（魔搭 / 豆包 / ClawHub / skills.sh 各有对应脚本） |
-| 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | ✅ 建议 | — | ✅ 必跑 |
+| 发布到第三方平台 | — | — | — | ✅ `release.py` 或各 `publish_*.py` |
+| `verify_publish.py` | — | — | — | ✅ 发布后复核 |
+| 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | ✅ 建议 | — | ✅ 脚本自动刷新 |

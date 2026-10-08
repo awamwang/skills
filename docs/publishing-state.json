@@ -114,34 +114,29 @@
     },
     "awam-todo-skill": {
       "github": {
-        "commit": "126af22",
-        "version": "0.6.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "26d1700",
+        "version": "0.7.1",
+        "at": "2026-10-08"
       },
       "lobehub": {
-        "commit": "126af22",
-        "version": "0.6.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "26d1700",
+        "version": "0.7.1",
+        "at": "2026-10-08"
       },
       "modelscope": {
-        "commit": "126af22",
-        "version": "0.6.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "26d1700",
+        "version": "0.7.1",
+        "at": "2026-10-08"
       },
       "clawhub": {
-        "commit": "126af22",
-        "version": "0.6.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "26d1700",
+        "version": "0.7.1",
+        "at": "2026-10-08"
       },
       "skillssh": {
-        "commit": "126af22",
-        "version": "0.6.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "26d1700",
+        "version": "0.7.1",
+        "at": "2026-10-08"
       }
     }
   }

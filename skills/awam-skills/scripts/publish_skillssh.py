@@ -329,19 +329,9 @@ def update_plan(plan_path: Path, skill_key: str, status: str = "done",
 
 
 def refresh_view() -> None:
-    """调用 plan_skills.py 刷新人读视图（不手改 md）。
-
-    Windows 下 `text=True` 默认按 GBK 解码，plan_skills.py 输出中文会炸掉
-    读取线程（stdout 变 None，实测踩到），必须显式 `encoding="utf-8"`。
-    """
-    out = subprocess.run(
-        [sys.executable, str(PLAN_SCRIPT)], capture_output=True, timeout=constants.PLAN_SCRIPT,
-        encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL,
-    )
-    if out.returncode == 0:
-        log(f"  视图已刷新：{(out.stdout or '').strip() or 'docs/publishing-plan.md'}")
-    else:
-        log(f"  ⚠ 刷新视图失败：{(out.stderr or '').strip() or f'退出码 {out.returncode}'}")
+    """调用 plan_skills.py 刷新人读视图（不手改 md）。"""
+    import runutil
+    runutil.refresh_plan_view()
 
 
 def resolve_repo(args, skill_dir: Path) -> str:
