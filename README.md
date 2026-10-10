@@ -55,7 +55,6 @@
 
 | 技能 | 简介 |
 |------|------|
-| [deploy-license-server-skill](https://github.com/awam-skills/deploy-license-server-skill) | Deploy and harden remote License Server: HMAC request signing, nonce anti-replay, Nginx rate limits, keygen and checklist |
 | [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | Issue, renew, and maintain Let's Encrypt TLS certificates on Windows via ACME. Routes among win-acme, Posh-ACME, and Certify The Web; covers HTTP-01/DNS-01,… |
 | [stock-hots-skill](https://github.com/awam-skills/stock-hots-skill) | 获取并聚合多平台热门股票榜单（东方财富/同花顺/通达信/淘股吧/财联社/开盘啦/雪球/大智慧），输出综合前十与各平台 TOP-N |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
