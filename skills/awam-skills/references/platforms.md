@@ -90,7 +90,7 @@ python skills/awam-skills/scripts/preflight_secrets.py --dir <技能仓>   # 独
 | **skills.sh** | 国际 | [publish_skillssh.py](../scripts/publish_skillssh.py)（skills CLI 安装遥测触发收录） | 无需凭据 | 一切已公开技能（find-skills 生态默认发现面） |
 | **GitHub 收口** | — | [publish_github.py](../scripts/publish_github.py) | `gh` 已登录 | Topics / description / state |
 | **多平台编排** | — | [release.py](../scripts/release.py) | 同上各平台前置 | 一次 preflight；魔搭/ClawHub/skills.sh 默认并行（`--no-plan` 后串行回写）；`--no-parallel` 可关 |
-| **升版本** | — | [bump_version.py](../scripts/bump_version.py) | — | 同步 `SKILL.md` / `SKILL.zh-CN.md`（不提交） |
+| **升版本 / 台账** | — | [upgrade_skill.py](../scripts/upgrade_skill.py)（见 [upgrade.md](upgrade.md)）；底层亦可 [bump_version.py](../scripts/bump_version.py) | — | 升 frontmatter + 回写 `docs/skill-versions.json`（不提交）；仅 bump 不回写台账 |
 | **发布后复核** | — | [verify_publish.py](../scripts/verify_publish.py) | 各平台凭据 / CLI | 线上版本与文件清单 |
 | **索引仓 state 提交** | — | [commit_publish_state.py](../scripts/commit_publish_state.py) | 用户明确 `--yes` | 只 stage `publishing-state.json` + 视图；不 push |
 
@@ -356,7 +356,9 @@ python skills/awam-skills/scripts/publish_skillssh.py --dir <技能仓> --custom
 单个技能多平台（推荐）：
 
 ```bash
-# 升版本（只改文件，需自行 commit + push）
+# 升版本 + 回写台账（需自行 commit + push；管理流程优先）
+python skills/awam-skills/scripts/upgrade_skill.py --skill <key> --part patch
+# 或仅改 frontmatter（不回写 docs/skill-versions.json）
 python skills/awam-skills/scripts/bump_version.py --dir <技能仓> --part patch
 
 # 编排：一次 preflight → 魔搭/ClawHub/skills.sh 并行 → 其它串行 → verify

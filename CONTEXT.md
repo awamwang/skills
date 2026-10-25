@@ -24,6 +24,12 @@ _Avoid_: 脚手架、init、scaffold（口语可说，文档与 Skill 正文用�
 
 _Avoid_: 上架、publish to marketplace
 
+## 升级
+
+对**发布规划内**已管理技能做发版升号：用 `skills/awam-skills/scripts/upgrade_skill.py` 提升技能仓 `SKILL.md` frontmatter `version`，并回写索引仓 `docs/skill-versions.json` 台账。权威 version 仍在技能仓；台账是可提交快照。脚本**不**自动 commit / push；升号后由用户提交，再按需走平台发布（`release.py`）。可用 `--refresh` 从本机克隆重刷台账，`--list` 只读列出。
+
+_Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把台账当成权威源
+
 ## 查询
 
 用 `skills/awam-skills/scripts/query_skills.py` **只读**列出并对比三处技能：组织 `awam-skills` 仓库、索引仓远程 README（及仓内流程 Skill）、本机技能扫描根（默认 `G:\Projects\19AI\skills`，由仓库根 `.env` 的 `AWAM_SKILLS_LOCAL_DIR` 配置；支持子目录嵌套的 `SKILL.md`，可用 `AWAM_SKILLS_LOCAL_EXCLUDE` 按目录名排除）。由脚本出表，不靠 AI 逐步手查。
@@ -47,9 +53,15 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 - **扁平布局**：根目录 `SKILL.md`（如 `github-organize`）——**默认**
 - **嵌套布局**：`skills/<name>/SKILL.md`，根目录可放 CLI / 测试 / 领域文档（如 `windows-autostart-skill`）——仅当有根目录 CLI、多技能或需要 CONTEXT 时选用
 
-## 创建/发布/查询 Skill
+## 创建/发布/查询/升级 Skill
 
-本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布与三方查询对比，不负责通用 Skill 优化。
+本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布、三方查询对比与发版升级，不负责通用 Skill 优化。
+
+## 版本台账
+
+`docs/skill-versions.json`：发布规划内各技能的当前 version 快照（可入库）。由 `upgrade_skill.py --refresh` 从本机克隆 frontmatter 生成/刷新；`--skill` / `--dir` 升版时回写对应条目。无本机路径时 `version` 为 null 并带 `reason`，不编造。
+
+_Avoid_: 手改台账代替跑脚本；把 `publishing-state.json`（各平台已发布 commit/version）与台账混为一谈
 
 ## 本机技能扫描根
 

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-25",
+  "skills": {
+    "ssh-deploy-skill": {
+      "version": "1.2.0",
+      "name": "ssh-deploy-skill",
+      "repo": "awam-skills/ssh-deploy-skill",
+      "updated": "2026-10-25"
+    },
+    "awam-git-skill": {
+      "version": "0.0.1",
+      "name": "awam-git",
+      "repo": "awam-skills/awam-git-skill",
+      "updated": "2026-10-25"
+    },
+    "awam-shandianshuo-skill": {
+      "version": "0.0.2",
+      "name": "awam-shandianshuo",
+      "repo": "awam-skills/awam-shandianshuo-skill",
+      "updated": "2026-10-25"
+    },
+    "github-organize": {
+      "version": "0.0.1",
+      "name": "github-organize",
+      "repo": "awam-skills/github-organize",
+      "updated": "2026-10-25"
+    },
+    "windows-autostart-skill": {
+      "version": null,
+      "name": "",
+      "repo": "awam-skills/windows-autostart-skill",
+      "updated": "2026-10-25",
+      "reason": "本机未映射（docs/repos.json 无 path）"
+    },
+    "letsencrypt-windows-skill": {
+      "version": "0.0.1",
+      "name": "letsencrypt-windows",
+      "repo": "awam-skills/letsencrypt-windows-skill",
+      "updated": "2026-10-25"
+    },
+    "quicker-connector": {
+      "version": null,
+      "name": "",
+      "repo": "awam-skills/quicker-connector",
+      "updated": "2026-10-25",
+      "reason": "本机路径不存在"
+    },
+    "awam-windows-backup-skill": {
+      "version": null,
+      "name": "",
+      "repo": "awam-skills/awam-windows-backup-skill",
+      "updated": "2026-10-25",
+      "reason": "本机路径不存在"
+    },
+    "wiz-migration": {
+      "version": null,
+      "name": "",
+      "repo": "awam-skills/wiz-migration",
+      "updated": "2026-10-25",
+      "reason": "本机路径不存在"
+    },
+    "stock-hots-skill": {
+      "version": null,
+      "name": "",
+      "repo": "awam-skills/stock-hots-skill",
+      "updated": "2026-10-25",
+      "reason": "找不到 SKILL.md（找不到 SKILL.md（仓库根与 skills/*/ 下都没有））"
+    },
+    "awam-todo-skill": {
+      "version": "0.7.1",
+      "name": "awam-todo",
+      "repo": "awam-skills/awam-todo-skill",
+      "updated": "2026-10-25"
+    }
+  }
+}
