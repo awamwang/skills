@@ -826,30 +826,6 @@
       },
       "notes": "2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 A股全栈数据"
     },
-    "bitwarden-skill": {
-      "tier": "t3",
-      "repo": "awam-skills/bitwarden-skill",
-      "summary": ">-",
-      "plan": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "status": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "notes": "2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 bitwarden"
-    },
     "economic-calendar-skill": {
       "tier": "t3",
       "repo": "awam-skills/economic-calendar-skill",
@@ -1041,54 +1017,6 @@
         "skillssh": "skip"
       },
       "notes": "2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 toolport"
-    },
-    "tutor-skill": {
-      "tier": "t3",
-      "repo": "awam-skills/tutor-skill",
-      "summary": ">",
-      "plan": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "status": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "notes": "2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 tutor"
-    },
-    "tutor-setup-skill": {
-      "tier": "t3",
-      "repo": "awam-skills/tutor-setup-skill",
-      "summary": ">",
-      "plan": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "status": {
-        "github": "skip",
-        "lobehub": "skip",
-        "modelscope": "skip",
-        "doubao": "skip",
-        "clawhub": "skip",
-        "agentpowers": "skip",
-        "skillssh": "skip"
-      },
-      "notes": "2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 tutor-setup"
     },
     "awam-pc-assets-skill": {
       "tier": "t3",

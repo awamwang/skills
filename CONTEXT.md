@@ -26,9 +26,9 @@ _Avoid_: 上架、publish to marketplace
 
 ## 升级
 
-对**发布规划内**已管理技能做发版升号：用 `skills/awam-skills/scripts/upgrade_skill.py` 提升技能仓 `SKILL.md` frontmatter `version`，并回写索引仓 `docs/skill-versions.json` 台账。权威 version 仍在技能仓；台账是可提交快照。脚本**不**自动 commit / push；升号后由用户提交，再按需走平台发布（`release.py`）。可用 `--refresh` 从本机克隆重刷台账，`--list` 只读列出。
+对**发布规划内**已管理技能做发版升号：用 `skills/awam-skills/scripts/upgrade_skill.py` 提升技能仓 `SKILL.md` frontmatter `version`，并回写本机 `docs/repos.json` 对应条目的版本字段。权威 version 仍在技能仓；repos 上的 version 字段是本机管理快照（gitignore）。脚本**不**自动 commit / push；升号后由用户提交，再按需走平台发布（`release.py`）。可用 `--refresh` 从本机克隆重刷版本字段，`--list` 只读列出。
 
-_Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把台账当成权威源
+_Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把 repos 版本字段当成权威源
 
 ## 查询
 
@@ -57,11 +57,22 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 
 本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布、三方查询对比与发版升级，不负责通用 Skill 优化。
 
-## 版本台账
+## 本机 repos 与版本字段
 
-`docs/skill-versions.json`：发布规划内各技能的当前 version 快照（可入库）。由 `upgrade_skill.py --refresh` 从本机克隆 frontmatter 生成/刷新；`--skill` / `--dir` 升版时回写对应条目。无本机路径时 `version` 为 null 并带 `reason`，不编造。
+`docs/repos.json`（gitignore；模板 `docs/repos.example.json`）：技能 key → 本机 `path`，以及版本管理字段：
 
-_Avoid_: 手改台账代替跑脚本；把 `publishing-state.json`（各平台已发布 commit/version）与台账混为一谈
+| 字段 | 含义 |
+|------|------|
+| `path` | 本地克隆路径（`null` = 未找到） |
+| `version` | frontmatter version 快照 |
+| `name` | frontmatter name |
+| `repo` | GitHub `owner/repo` |
+| `version_updated` | 版本字段最近刷新日 |
+| `version_reason` | `version` 为 null 时的原因 |
+
+由 `upgrade_skill.py --refresh` / 升版回写；无本机路径时 `version` 为 null 并带 `version_reason`，不编造。
+
+_Avoid_: 手改版本字段代替跑脚本；把 `publishing-state.json`（各平台已发布 commit/version）与 repos 版本字段混为一谈；提交 `repos.json`
 
 ## 本机技能扫描根
 

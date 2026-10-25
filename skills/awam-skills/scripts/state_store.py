@@ -40,19 +40,41 @@ def load_state(path: Path = STATE_PATH) -> dict:
 
 
 def load_repos(path: Path = REPOS_PATH) -> dict:
-    """读本机路径映射；文件不入库，缺失时提示从 example 复制。"""
+    """读本机路径映射（含 version 管理字段）；文件不入库，缺失时提示从 example 复制。"""
     if not path.exists():
         example = REPOS_EXAMPLE_PATH
         if example.exists():
             raise FileNotFoundError(
                 f"缺少本机路径映射：{path}\n"
-                f"  请复制 {example.name} 为 repos.json 并填入本机克隆路径"
+                f"  请复制 {example.name} 为 repos.json 并填入克隆路径与版本字段"
                 f"（repos.json 已 gitignore，勿提交）"
             )
         raise FileNotFoundError(
             f"缺少本机路径映射：{path}（该文件不入库，需在本机自行维护）"
         )
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_repos(data: dict, path: Path = REPOS_PATH) -> bool:
+    """原子写 repos.json；失败返回 False。"""
+    data = dict(data)
+    data["updated"] = date.today().isoformat()
+    data.setdefault("schema_version", 1)
+    data.setdefault("repos", {})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(tmp_fd, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        os.replace(tmp_name, path)
+    except OSError:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        return False
+    return True
 
 
 def git_head(repo_dir: Path) -> str | None:

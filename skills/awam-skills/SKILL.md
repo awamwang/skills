@@ -1,15 +1,15 @@
 ---
 name: awam-skills
-version: 0.2.2
+version: 0.2.3
 description: >-
   按 Awam 个人约定创建、发布、升级或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
   索引仓远程 / 本机技能扫描根（默认 G:\Projects\19AI\skills，可由 .env 配置）的技能列表
-  与存在性，对管理中的技能做发版升号并维护 docs/skill-versions.json 台账，以及把技能发布到
+  与存在性，对管理中的技能做发版升号并回写 docs/repos.json 版本字段，以及把技能发布到
   第三方平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / skills.sh / AgentPowers）并维护
   发布规划（docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度（git 状态、
   与远程是否同步、frontmatter、打包根、会不会把本机私密数据打进公开包）。在用户提到创建技能、
-  初始化技能仓、发布技能、升级技能版本、版本台账、收录到 awam-skills 索引、发布到平台 / 市场、
+  初始化技能仓、发布技能、升级技能版本、版本管理、收录到 awam-skills 索引、发布到平台 / 市场、
   发布规划、查询技能列表、对比本机与线上技能，或显式调用 /awam-skills 时使用。
   不处理通用 Skill 质量优化或对他人仓的 review。
 disable-model-invocation: true
@@ -24,7 +24,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**查询**与**第
 | 用户意图 | 走哪条 |
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
-| **升级技能版本 / 版本台账**（升 frontmatter version、刷新 `docs/skill-versions.json`） | [升级](references/upgrade.md)；固定入口 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（**禁止手改 version 代替**） |
+| **升级技能版本 / 版本管理**（升 frontmatter version、刷新 `docs/repos.json` 版本字段） | [升级](references/upgrade.md)；固定入口 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（**禁止手改 version 代替**） |
 | **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、私密夹带、本机绝对路径） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
 | **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub / LobeHub 上传型脚本已内置，命中即中止；skills.sh 无上传环节，不适用 |
 | 仅改 frontmatter version、不回写台账 | [scripts/bump_version.py](scripts/bump_version.py)（管理流程优先 `upgrade_skill.py`） |
@@ -55,7 +55,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**查询**与**第
 | 分类 Topics（可选） | `skills.overrides.json` 里各类的 `topics`（如 `cat-ops`） |
 | README 写入方 | **仅** GitHub Actions「Sync Skills Catalog」——发布时**禁止**本地跑 `scripts/sync_skills.py` |
 | 发布规划权威 | `docs/publishing-plan.json`（每个技能 × 平台的 `plan`/`status`）；人读视图 `docs/publishing-plan.md` 由 [scripts/plan_skills.py](scripts/plan_skills.py) 生成，**勿手改视图** |
-| 版本台账 | `docs/skill-versions.json`（规划内技能当前 version 快照）；由 [upgrade_skill.py](scripts/upgrade_skill.py) 刷新/回写，**勿手改代替脚本** |
+| 本机路径与版本字段 | `docs/repos.json`（gitignore；模板 `repos.example.json`）：`path` + `version`/`name`/`repo`/`version_updated`/`version_reason`；由 [upgrade_skill.py](scripts/upgrade_skill.py) 刷新/回写，**勿手改代替脚本** |
 
 ## 仓库命名
 
@@ -76,7 +76,7 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
 3. 按对应 reference 逐步执行；缺分类、发布目标平台等决策时**问用户**，不替用户拍板索引语义。
 4. **升级**必须跑 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（见 [升级](references/upgrade.md)）：
-   升号并回写 `docs/skill-versions.json`；**禁止**手改 version / 只改台账。脚本不提交；
+   升号并回写 `docs/repos.json` 版本字段；**禁止**手改 version / 只改 repos 字段。脚本不提交；
    告知用户建议 commit 信息，再按需发平台。
 5. **任何发布动作之前，先跑 [scripts/preflight.py](scripts/preflight.py)**：
    `python skills/awam-skills/scripts/preflight.py --dir <技能仓>`。
@@ -157,4 +157,4 @@ python skills/awam-skills/scripts/check_publish_drift.py
 | 发布到第三方平台 | — | 升号后可选 | — | — | ✅ `release.py` 或各 `publish_*.py` |
 | `verify_publish.py` | — | — | — | — | ✅ 发布后复核 |
 | 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | — | ✅ 建议 | — | ✅ 脚本自动刷新 |
-| 回写 `skill-versions.json` | — | ✅ 脚本自动 | — | — | — |
+| 回写 `repos.json` 版本字段 | — | ✅ 脚本自动（勿提交 repos.json） | — | — | — |

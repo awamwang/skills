@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""技能发版升级：刷新版本台账 / 提升 frontmatter version / 可选衔接 release。
+"""技能发版升级：刷新 repos 版本字段 / 提升 frontmatter version / 可选衔接 release。
 
-权威 version 在技能仓 SKILL.md；索引仓 docs/skill-versions.json 为可提交快照。
-不替用户 commit / push。
+权威 version 在技能仓 SKILL.md；版本管理快照写在本机 docs/repos.json 各 repo 记录上
+（见 docs/repos.example.json）。不替用户 commit / push。
 
 用法：
   python skills/awam-skills/scripts/upgrade_skill.py --list
@@ -59,7 +59,7 @@ def plan_repo_for(skill_key: str) -> str:
 def do_list(data: dict) -> int:
     skills = data.get("skills") or {}
     runutil.log(
-        f"版本台账 {version_store.VERSIONS_PATH.name} "
+        f"版本字段 @ {version_store.REPOS_PATH.name} "
         f"（updated={data.get('updated') or '?'}，共 {len(skills)} 项）"
     )
     if not skills:
@@ -80,7 +80,7 @@ def do_list(data: dict) -> int:
 
 def do_refresh(*, dry_run: bool) -> int:
     skills = version_store.collect_from_plan()
-    runutil.log(f"将刷新 {len(skills)} 项到 {version_store.VERSIONS_PATH}")
+    runutil.log(f"将刷新 {len(skills)} 项版本字段到 {version_store.REPOS_PATH}")
     ok = sum(1 for e in skills.values() if e.get("version"))
     miss = len(skills) - ok
     runutil.log(f"  有 version: {ok}  |  缺/无路径: {miss}")
@@ -161,18 +161,17 @@ def update_ledger_entry(
     repo = plan_repo_for(skill_key)
     if dry_run:
         runutil.log(
-            f"  [dry-run] 台账 {skill_key}: → {new_ver} ({name}) {repo}"
+            f"  [dry-run] repos.{skill_key}.version → {new_ver} ({name}) {repo}"
         )
         return
     if not version_store.upsert_skill(
-        version_store.VERSIONS_PATH,
         skill_key,
         version=new_ver,
         name=name,
         repo=repo,
     ):
-        raise SystemExit(f"无法回写台账：{version_store.VERSIONS_PATH}")
-    runutil.log(f"  ✅ 台账已更新：{skill_key} = {new_ver}")
+        raise SystemExit(f"无法回写 repos.json：{version_store.REPOS_PATH}")
+    runutil.log(f"  ✅ repos 已更新：{skill_key} = {new_ver}")
 
 
 def git_dirty(skill_dir: Path) -> bool:
@@ -188,7 +187,7 @@ def do_release(skill_dir: Path, skill_key: str | None, extra: list[str]) -> int:
             "✗ 工作区有未提交改动（含刚升的 version）。"
             "请先按 awam-git 规范 commit + push，再单独跑 release，或去掉 --release 分步做。"
         )
-        runutil.log(f"  建议提交：feat(skills): 升级至 <新版本>")
+        runutil.log("  建议提交：feat(skills): 升级至 <新版本>")
         runutil.log(
             f"  随后：python skills/awam-skills/scripts/release.py --dir {skill_dir}"
             + (f" --skill {skill_key}" if skill_key else "")
@@ -209,18 +208,18 @@ def do_release(skill_dir: Path, skill_key: str | None, extra: list[str]) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="技能发版升级：台账刷新 / 升 version / 可选衔接 release"
+        description="技能发版升级：repos 版本字段刷新 / 升 version / 可选衔接 release"
     )
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument(
         "--list",
         action="store_true",
-        help="列出 docs/skill-versions.json（不扫本机）",
+        help="列出 docs/repos.json 中的版本字段（不扫本机）",
     )
     mode.add_argument(
         "--refresh",
         action="store_true",
-        help="按 publishing-plan + repos.json 重刷版本台账",
+        help="按 publishing-plan 扫本机 frontmatter，回写 repos.json 版本字段并更新 example",
     )
     mode.add_argument("--skill", metavar="KEY", help="按规划 key 升版（需 repos.json）")
     mode.add_argument("--dir", type=Path, help="按技能仓路径升版")
@@ -268,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:
     if skill_key:
         update_ledger_entry(skill_key, new_ver, fm, dry_run=args.dry_run)
     else:
-        runutil.log("  ⚠ 未能解析 planning key，跳过台账回写（可显式 --skill）")
+        runutil.log("  ⚠ 未能解析 planning key，跳过 repos 回写（可显式 --skill）")
 
     if cur != new_ver or args.dry_run:
         runutil.log(f"建议提交：feat(skills): 升级至 {new_ver}")
