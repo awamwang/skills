@@ -58,7 +58,6 @@
 | `video-use-skill` | 需改造 | — | — | — | — | — | — | — |
 | `a-stock-data-skill` | 需改造 | — | — | — | — | — | — | — |
 | `economic-calendar-skill` | 需改造 | — | — | — | — | — | — | — |
-| `github-skill` | 需改造 | — | — | — | — | — | — | — |
 | `lark-send-skill` | 需改造 | — | — | — | — | — | — | — |
 | `limellm-config-skill` | 需改造 | — | — | — | — | — | — | — |
 | `obs-skill` | 需改造 | — | — | — | — | — | — | — |
@@ -573,22 +572,6 @@
 - 仓库：`awam-skills/economic-calendar-skill`
 - 简介：本机发现：economic-calendar（economic-calendar/economic-calendar）
 - 规划：2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 economic-calendar/economic-calendar
-
-| 平台 | 规划 | 实际 |
-|------|:----:|:----:|
-| GitHub（基础层） | 不建议 | — 不建议 |
-| LobeHub | 不建议 | — 不建议 |
-| 魔搭 ModelScope | 不建议 | — 不建议 |
-| 豆包技能中心 | 不建议 | — 不建议 |
-| ClawHub | 不建议 | — 不建议 |
-| AgentPowers | 不建议 | — 不建议 |
-| skills.sh | 不建议 | — 不建议 |
-
-### github-skill · 需改造
-
-- 仓库：`awam-skills/github-skill`
-- 简介：本机发现：github（github）
-- 规划：2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 github
 
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
