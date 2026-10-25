@@ -4,12 +4,12 @@ version: 0.2.1
 description: >-
   按 Awam 个人约定创建、发布或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
-  索引仓远程 / 本机 ~/.agents/skills/awam 的技能列表与存在性，以及把技能发布到第三方
-  平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / skills.sh / AgentPowers）并维护发布规划
-  （docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度（git 状态、
-  与远程是否同步、frontmatter、打包根、会不会把本机私密数据打进公开包）。
-  在用户提到创建技能、初始化技能仓、发布技能、收录到
-  awam-skills 索引、发布到平台 / 市场、发布规划、查询技能列表、对比本机与线上技能，
+  索引仓远程 / 本机技能扫描根（默认 G:\Projects\19AI\skills，可由 .env 配置）的技能列表
+  与存在性，以及把技能发布到第三方平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub /
+  skills.sh / AgentPowers）并维护发布规划（docs/publishing-plan.json）。发布前先用
+  preflight.py 查一遍本机就绪度（git 状态、与远程是否同步、frontmatter、打包根、
+  会不会把本机私密数据打进公开包）。在用户提到创建技能、初始化技能仓、发布技能、
+  收录到 awam-skills 索引、发布到平台 / 市场、发布规划、查询技能列表、对比本机与线上技能，
   或显式调用 /awam-skills 时使用。不处理通用 Skill 质量优化或对他人仓的 review。
 disable-model-invocation: true
 ---
@@ -33,7 +33,7 @@ Awam 个人技能仓的**创建**、**发布**、**查询**与**第三方平台�
 | **发布提醒 / 漂移检测**（哪些技能本地改了但平台没跟上） | [scripts/check_publish_drift.py](scripts/check_publish_drift.py)：对技能仓做了提交、或用户问「接下来发什么」时跑；有漂移逐个问是否现在发布（见下方「发布提醒」节） |
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |
-| 列组织 / 索引远程 / 本机 awam 技能并对比 | [查询](references/query.md) |
+| 列组织 / 索引远程 / 本机技能并对比 | [查询](references/query.md) |
 | 改 skill 结构、写更好的 prompt、通用质量优化 | **拒绝**（Non-goals） |
 
 ## Non-goals

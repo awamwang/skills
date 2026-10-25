@@ -5,6 +5,10 @@
 # 本机技能克隆路径映射（含绝对路径 / 用户目录，勿入库；模板见 docs/repos.example.json）
 docs/repos.json
 
+# 本机技能扫描配置（路径 / 排除名单；模板见 .env.example）
+.env
+.env.local
+
 
 # Python 字节码
 __pycache__/

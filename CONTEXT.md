@@ -26,7 +26,7 @@ _Avoid_: 上架、publish to marketplace
 
 ## 查询
 
-用 `skills/awam-skills/scripts/query_skills.py` **只读**列出并对比三处技能：组织 `awam-skills` 仓库、索引仓远程 README（及仓内流程 Skill）、本机 `~/.agents/skills/awam/`。由脚本出表，不靠 AI 逐步手查。
+用 `skills/awam-skills/scripts/query_skills.py` **只读**列出并对比三处技能：组织 `awam-skills` 仓库、索引仓远程 README（及仓内流程 Skill）、本机技能扫描根（默认 `G:\Projects\19AI\skills`，由仓库根 `.env` 的 `AWAM_SKILLS_LOCAL_DIR` 配置；支持子目录嵌套的 `SKILL.md`，可用 `AWAM_SKILLS_LOCAL_EXCLUDE` 按目录名排除）。由脚本出表，不靠 AI 逐步手查。
 
 _Avoid_: 同步（会写 README）；发布
 
@@ -51,9 +51,14 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 
 本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布与三方查询对比，不负责通用 Skill 优化。
 
-## 本机 awam 目录
+## 本机技能扫描根
 
-`~/.agents/skills/awam/`（Windows: `%USERPROFILE%\.agents\skills\awam\`）：本机按「awam」命名空间放置的技能子目录，查询流程与组织仓、索引仓对照用。与 skills 根目录下其它第三方技能无关。
+查询脚本扫描的本机技能根目录。默认 `G:\Projects\19AI\skills`；权威配置在索引仓根 `.env`（模板 `.env.example`）：
+
+- `AWAM_SKILLS_LOCAL_DIR`：扫描根路径
+- `AWAM_SKILLS_LOCAL_EXCLUDE`：按目录名排除（逗号分隔），命中技能目录名或其祖先目录名则不纳入管理对比
+
+支持根下任意深度嵌套的 `SKILL.md`（扁平仓与 `skills/<name>/SKILL.md` 嵌套布局均可）。CLI 可用 `--local-dir` / `--exclude` 临时覆盖。
 
 ## 仓库命名
 

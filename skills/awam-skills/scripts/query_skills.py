@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""查询并对比三处技能来源：组织仓、索引仓远程、本机 awam 目录。
+"""查询并对比三处技能来源：组织仓、索引仓远程、本机技能目录。
 
 用法：
   cd <索引仓> && python skills/awam-skills/scripts/query_skills.py   # 在索引仓里跑最稳
@@ -10,6 +10,10 @@
 索引仓根定位顺序：--index-root > 环境变量 AWAM_SKILLS_INDEX_ROOT > 从当前目录向上找
 （含 skills.overrides.json + README.md）> 脚本相对位置。定位失败会明确报错并给解法 ——
 在 `~/.workbuddy/skills/` 这类安装副本下跑，脚本相对位置会推错（见 resolve_index_root）。
+
+本机扫描根：--local-dir > 环境变量 / 索引仓根 .env 的 AWAM_SKILLS_LOCAL_DIR >
+默认 G:\\Projects\\19AI\\skills。支持子目录嵌套的 SKILL.md；排除名单见
+AWAM_SKILLS_LOCAL_EXCLUDE / --exclude（按目录名）。
 """
 
 from __future__ import annotations
@@ -28,7 +32,25 @@ from pathlib import Path
 
 API = "https://api.github.com"
 ORG = "awam-skills"
-DEFAULT_LOCAL_AWAM = Path.home() / ".agents" / "skills" / "awam"
+# 本机技能扫描根目录默认值；可被 .env / 环境变量 / --local-dir 覆盖
+DEFAULT_LOCAL_DIR = Path(r"G:\Projects\19AI\skills")
+
+# .env / 环境变量键
+ENV_LOCAL_DIR = "AWAM_SKILLS_LOCAL_DIR"
+ENV_LOCAL_EXCLUDE = "AWAM_SKILLS_LOCAL_EXCLUDE"
+
+# 递归扫描时跳过的目录名（不区分大小写）
+SKIP_DIR_NAMES = frozenset({
+    ".git", ".hg", ".svn",
+    "node_modules", "__pycache__", ".venv", "venv",
+    ".tox", ".mypy_cache", ".pytest_cache", ".ruff_cache",
+    "dist", "build", ".cache", ".workbuddy",
+    # 常见大数据 / 产物目录，避免拖慢扫描
+    "vendor", "target", ".next", "coverage", "tmp", "temp",
+})
+
+# 相对扫描根的最大下钻深度（repo/skills/<name> 约 3 层；留余量）
+LOCAL_SCAN_MAX_DEPTH = 5
 
 # HTTP 超时（秒）：避免网络挂死时调用方一直等
 HTTP_TIMEOUT = 30
@@ -42,6 +64,68 @@ def _looks_like_index_root(p: Path) -> bool:
         return p.is_dir() and all((p / m).exists() for m in INDEX_MARKERS)
     except OSError:
         return False
+
+
+def load_dotenv(path: Path) -> bool:
+    """从 .env 加载键值到 os.environ（不覆盖已有环境变量）。返回是否成功读到文件。"""
+    if not path.is_file():
+        return False
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].strip()
+        if "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        val = val.strip()
+        if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'":
+            val = val[1:-1]
+        os.environ[key] = val
+    return True
+
+
+def load_dotenv_for_index(index_root: Path) -> Path | None:
+    """优先读索引仓根 .env，其次当前工作目录 .env。返回实际加载的路径。"""
+    for cand in (index_root / ".env", Path.cwd() / ".env"):
+        try:
+            resolved = cand.resolve()
+        except OSError:
+            continue
+        if load_dotenv(resolved):
+            return resolved
+    return None
+
+
+def parse_exclude_names(*sources: str | None) -> set[str]:
+    """解析排除名单：逗号 / 分号 / 空白分隔的目录名，小写归一。"""
+    names: set[str] = set()
+    for src in sources:
+        if not src:
+            continue
+        for part in re.split(r"[,;\s]+", src.strip()):
+            name = part.strip().strip("/\\")
+            if name:
+                names.add(name.lower())
+    return names
+
+
+def resolve_local_dir(explicit: Path | str | None = None) -> Path:
+    """本机扫描根：--local-dir > 环境变量 AWAM_SKILLS_LOCAL_DIR > 默认 G:\\Projects\\19AI\\skills。"""
+    if explicit is not None:
+        return Path(explicit).expanduser().resolve()
+    env = os.environ.get(ENV_LOCAL_DIR, "").strip()
+    if env:
+        return Path(env).expanduser().resolve()
+    return DEFAULT_LOCAL_DIR.expanduser().resolve()
 
 
 def resolve_index_root(explicit: str | None = None) -> Path | None:
@@ -366,42 +450,113 @@ def collect_index(token: str | None, prefer_remote: bool) -> tuple[list[SkillEnt
     return sorted(entries, key=lambda e: e.display.lower()), origin_label
 
 
-def collect_local(local_dir: Path) -> list[SkillEntry]:
+def _should_skip_dir(name: str, exclude: set[str]) -> bool:
+    """隐藏目录、常见工程垃圾目录、排除名单中的目录名一律不进扫描。"""
+    if name.startswith(".") or name.startswith("_"):
+        return True
+    lower = name.lower()
+    if lower in SKIP_DIR_NAMES:
+        return True
+    if lower in exclude:
+        return True
+    return False
+
+
+def collect_local(
+    local_dir: Path,
+    exclude: set[str] | None = None,
+    max_depth: int = LOCAL_SCAN_MAX_DEPTH,
+) -> list[SkillEntry]:
+    """递归扫描本机技能根：凡含 SKILL.md 的目录视为一项技能（不再继续下钻）。
+
+    支持扁平（`<name>/SKILL.md`）与嵌套（`<repo>/skills/<name>/SKILL.md`、
+    `<repo>/<name>/SKILL.md`）。排除名单按**技能目录名**（含 SKILL.md 的那一层，
+    以及路径上任意祖先目录名）匹配，命中则跳过。
+    """
     entries: list[SkillEntry] = []
+    ex = {n.lower() for n in (exclude or set())}
     if not local_dir.is_dir():
         return entries
-    for child in sorted(local_dir.iterdir()):
-        if child.name.startswith(".") or child.name.startswith("_"):
-            continue
-        if not child.is_dir():
-            continue
-        skill_md = child / "SKILL.md"
-        has = skill_md.is_file()
-        # 目录即视为一项；无 SKILL.md 仍列出以便对比缺口
-        link_type = ""
-        target = ""
-        # Windows Junction：Path.is_symlink 可能为 False
-        if os.path.islink(child) or _is_junction(child):
-            link_type = "link"
-            try:
-                target = str(os.readlink(child))
-            except OSError:
-                target = ""
 
-        entries.append(
-            SkillEntry(
-                key=normalize_key(child.name),
-                display=child.name,
-                source="local",
-                path_or_url=str(child),
-                has_skill_md=has,
-                extra={
-                    "link_type": link_type,
-                    "target": target,
-                },
-            )
-        )
-    return entries
+    # (dirpath, depth_from_root)；depth=0 为扫描根本身
+    stack: list[tuple[Path, int]] = [(local_dir, 0)]
+    seen_paths: set[str] = set()
+
+    while stack:
+        current, depth = stack.pop()
+        # 用绝对路径字符串去重；不 resolve 软链目标，避免 junction 把扫描拖出根外
+        try:
+            key = str(current.absolute())
+        except OSError:
+            continue
+        if key in seen_paths:
+            continue
+        seen_paths.add(key)
+
+        if depth >= max_depth:
+            continue
+
+        try:
+            children = sorted(current.iterdir(), key=lambda p: p.name.lower())
+        except OSError:
+            continue
+
+        for child in children:
+            # 不跟随 symlink/junction 继续下钻，只允许把其自身当作技能叶（若含 SKILL.md）
+            is_link = False
+            try:
+                is_link = os.path.islink(child) or _is_junction(child)
+            except OSError:
+                continue
+            try:
+                if not child.is_dir():
+                    continue
+            except OSError:
+                continue
+            if _should_skip_dir(child.name, ex):
+                continue
+
+            skill_md = child / "SKILL.md"
+            has_skill = False
+            try:
+                has_skill = skill_md.is_file()
+            except OSError:
+                continue
+
+            if has_skill:
+                link_type = "link" if is_link else ""
+                target = ""
+                if is_link:
+                    try:
+                        target = str(os.readlink(child))
+                    except OSError:
+                        target = ""
+                try:
+                    rel = str(child.relative_to(local_dir)).replace("\\", "/")
+                except ValueError:
+                    rel = child.name
+                entries.append(
+                    SkillEntry(
+                        key=normalize_key(child.name),
+                        display=child.name,
+                        source="local",
+                        path_or_url=str(child),
+                        has_skill_md=True,
+                        extra={
+                            "link_type": link_type,
+                            "target": target,
+                            "rel": rel,
+                        },
+                    )
+                )
+                # 已是技能叶节点，不再下钻（避免扫进技能仓内的 fixture / 副本）
+                continue
+
+            if is_link:
+                continue
+            stack.append((child, depth + 1))
+
+    return sorted(entries, key=lambda e: (e.extra.get("rel") or e.display).lower())
 
 
 def _is_junction(path: Path) -> bool:
@@ -475,7 +630,7 @@ def build_compare(
             # 流程 Skill 仅活在索引仓，不算缺口
             gaps.append("索引有、组织无")
         if row["org"] and not row["local"]:
-            gaps.append("组织有、本机 awam 无")
+            gaps.append("组织有、本机无")
         if row["local"] and not row["org"]:
             gaps.append("本机有、组织无")
         if row["local"] and row["local_has_skill_md"] is False:
@@ -536,7 +691,7 @@ def render_table(
         + (f" — {', '.join(r['key'] for r in only_index)}" if only_index else "")
     )
     lines.append(
-        f"- 仅本机 awam: {len(only_local)}"
+        f"- 仅本机: {len(only_local)}"
         + (f" — {', '.join(r['key'] for r in only_local)}" if only_local else "")
     )
     lines.append("")
@@ -561,13 +716,14 @@ def render_lists(org: list[SkillEntry], index: list[SkillEntry], local: list[Ski
             suffix = f" ({via})" if via else ""
             lines.append(f"- {e.display}{suffix} — {e.path_or_url}")
     lines.append("")
-    lines.append("### 本机 ~/.agents/skills/awam")
+    lines.append("### 本机技能目录")
     if not local:
-        lines.append("_（目录不存在或为空）_")
+        lines.append("_（目录不存在、为空，或全部被排除）_")
     else:
         for e in local:
+            rel = e.extra.get("rel") or e.display
             flag = "SKILL.md" if e.has_skill_md else "缺 SKILL.md"
-            lines.append(f"- {e.display} [{flag}] — {e.path_or_url}")
+            lines.append(f"- {e.display} ({rel}) [{flag}] — {e.path_or_url}")
     lines.append("")
     return "\n".join(lines)
 
@@ -602,8 +758,8 @@ def mask_json_payload(payload: dict, home: str) -> dict:
     """对 JSON 输出的主机路径字段做脱敏：meta 根目录、local 的 path/target、compare 的 local_path。"""
     meta = payload.get("meta")
     if isinstance(meta, dict):
-        for k in ("index_root", "local_dir"):
-            if isinstance(meta.get(k), str):
+        for k in ("index_root", "local_dir", "dotenv"):
+            if isinstance(meta.get(k), str) and meta[k]:
                 meta[k] = _mask_host_path(meta[k], home)
 
     for item in payload.get("local", []) or []:
@@ -623,7 +779,7 @@ def mask_json_payload(payload: dict, home: str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="查询并对比组织 / 索引仓 / 本机 awam 技能")
+    parser = argparse.ArgumentParser(description="查询并对比组织 / 索引仓 / 本机技能目录")
     parser.add_argument(
         "--only",
         choices=("all", "org", "index", "local", "compare"),
@@ -639,8 +795,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--local-dir",
         type=Path,
-        default=DEFAULT_LOCAL_AWAM,
-        help=f"本机 awam 技能目录（默认 {DEFAULT_LOCAL_AWAM}）",
+        default=None,
+        help=(
+            f"本机技能扫描根目录（默认读 .env/{ENV_LOCAL_DIR}，"
+            f"再回退 {DEFAULT_LOCAL_DIR}）"
+        ),
+    )
+    parser.add_argument(
+        "--exclude",
+        default="",
+        help=(
+            "按目录名排除技能（逗号分隔；与 .env 的 "
+            f"{ENV_LOCAL_EXCLUDE} 合并）。匹配含 SKILL.md 的目录名及其祖先目录名"
+        ),
     )
     parser.add_argument(
         "--no-remote",
@@ -669,6 +836,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    dotenv_path = load_dotenv_for_index(INDEX_ROOT)
+    local_dir = resolve_local_dir(args.local_dir)
+    exclude = parse_exclude_names(
+        os.environ.get(ENV_LOCAL_EXCLUDE),
+        args.exclude,
+    )
+
     token = resolve_token()
     org: list[SkillEntry] = []
     index: list[SkillEntry] = []
@@ -694,13 +868,15 @@ def main(argv: list[str] | None = None) -> int:
             errors.append(f"index: {e}")
 
     if need_local:
-        local = collect_local(args.local_dir.resolve())
+        local = collect_local(local_dir, exclude=exclude)
 
     compare = build_compare(org, index, local) if need_org or need_index or need_local else []
     meta = {
         "index_root": str(INDEX_ROOT),
         "index_origin": index_origin,
-        "local_dir": str(args.local_dir.resolve()),
+        "local_dir": str(local_dir),
+        "local_exclude": sorted(exclude),
+        "dotenv": str(dotenv_path) if dotenv_path else "",
         "errors": errors,
     }
 

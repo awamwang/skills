@@ -8,17 +8,34 @@
 |------|------|------------|
 | **组织** | GitHub 组织 `awam-skills` 下的技能仓 | GitHub API（`gh` token） |
 | **索引** | 本索引仓远程 README 收录的技能 + 仓内 `skills/*/SKILL.md` | 优先 `origin/*/README.md`，否则本地；叠加 `skills.overrides.json` |
-| **本机** | `%USERPROFILE%\.agents\skills\awam\`（macOS/Linux: `~/.agents/skills/awam/`）下子目录 | 扫本地目录 |
+| **本机** | 本机技能扫描根下含 `SKILL.md` 的目录（含嵌套子目录） | 扫本地目录；根路径与排除名单见 `.env` |
 
 对比键：小写；若名称以 `-skill` 结尾则去掉该后缀再对齐（`-skills` 不剥）。
 
+## 本机扫描配置
+
+索引仓根 `.env`（模板见仓库根 `.env.example`；`.env` 已 gitignore）：
+
+| 变量 | 作用 | 默认 |
+|------|------|------|
+| `AWAM_SKILLS_LOCAL_DIR` | 本机技能扫描根 | `G:\Projects\19AI\skills` |
+| `AWAM_SKILLS_LOCAL_EXCLUDE` | 按目录名排除（逗号分隔，不区分大小写） | 空 |
+
+解析优先级：`--local-dir` / `--exclude` > 已有环境变量 > `.env` > 内置默认。
+
+扫描规则：
+
+- 递归查找含 `SKILL.md` 的目录；找到后**不再下钻**（避免扫进技能仓内 fixture）
+- 跳过以 `.` / `_` 开头的目录，以及 `node_modules` / `.git` 等常见垃圾目录
+- 排除名单匹配「含 `SKILL.md` 的目录名」或其任意祖先目录名
+
 ## 何时用
 
-用户要：查组织有哪些技能仓、索引仓收录了什么、本机 awam 装了什么，或三者存在性对比 / 缺口。
+用户要：查组织有哪些技能仓、索引仓收录了什么、本机装了什么，或三者存在性对比 / 缺口。
 
 ## 步骤
 
-1. **在索引仓根执行最稳**（脚本要能定位到索引仓，才能读 `skills.overrides.json` 与 `README.md`）：
+1. **在索引仓根执行最稳**（脚本要能定位到索引仓，才能读 `skills.overrides.json`、`README.md` 与 `.env`）：
 
 ```bash
 cd <索引仓> && python skills/awam-skills/scripts/query_skills.py
@@ -39,7 +56,7 @@ python "$PWD\skills\awam-skills\scripts\query_skills.py"
 
 2. 把脚本 stdout（Markdown 表 + 分源列表）原样或略整理后回复用户；**不要**再手工复跑 API。
 3. 若报 `org:` API 错误：确认 `gh auth login` 或环境变量 `GH_TOKEN` / `GITHUB_TOKEN`。
-4. 若本机列为空：确认目录是否存在；可用 `--local-dir` 覆盖。
+4. 若本机列为空：确认 `.env` 里 `AWAM_SKILLS_LOCAL_DIR` 是否存在；可用 `--local-dir` 覆盖；检查是否被 `AWAM_SKILLS_LOCAL_EXCLUDE` 全排除。
 
 ## 常用参数
 
@@ -50,7 +67,8 @@ python "$PWD\skills\awam-skills\scripts\query_skills.py"
 | `--only org` / `index` / `local` | 只要单源列表 |
 | `--format json` | JSON（给后续脚本或精确字段） |
 | `--no-remote` | 索引只用本地 README |
-| `--local-dir <path>` | 覆盖本机 awam 目录 |
+| `--local-dir <path>` | 覆盖本机扫描根 |
+| `--exclude a,b` | 额外按目录名排除（与 `.env` 合并） |
 | `--index-root <path>` | 显式指定索引仓根（在索引仓外执行时用） |
 
 ## 校验
@@ -65,6 +83,6 @@ python "$PWD\skills\awam-skills\scripts\query_skills.py"
 |------|----------|
 | 组织有、索引无 | 仓已建但未进 overrides / README 未同步 |
 | 索引有、组织无 | 个人 topic 仓或仅 overrides；流程 Skill `awam-skills` 除外 |
-| 组织有、本机 awam 无 | 未链到 `~/.agents/skills/awam/`（可能装在 skills 根目录） |
+| 组织有、本机无 | 未放到扫描根，或目录名落在排除名单 |
 | 本机有、组织无 | 本地草稿 / 未发布组织仓 |
-| 本机目录缺 SKILL.md | 文件夹在，但还不是完整 Skill |
+| 本机目录缺 SKILL.md | 文件夹在，但还不是完整 Skill（当前递归模式一般只列已有 SKILL.md 的项） |
