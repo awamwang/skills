@@ -30,6 +30,12 @@ _Avoid_: 上架、publish to marketplace
 
 _Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把 repos 版本字段当成权威源
 
+## 移出管理
+
+用 `skills/awam-skills/scripts/unmanage_skill.py` 把技能从管理面拿掉：删除 `publishing-plan.json` / `repos.json` / `publishing-state.json` 中对应条目，并刷新 `repos.example.json` 与规划视图。**不**删本机目录、**不**改技能仓 git、**不**改索引 README；默认不改 `skills.overrides.json`（可用 `--also-overrides`）。
+
+_Avoid_: 手删 JSON 代替脚本；把移出管理当成卸载本机技能或删除 GitHub 仓
+
 ## 查询
 
 用 `skills/awam-skills/scripts/query_skills.py` **只读**列出并对比三处技能：组织 `awam-skills` 仓库、索引仓远程 README（及仓内流程 Skill）、本机技能扫描根（默认 `G:\Projects\19AI\skills`，由仓库根 `.env` 的 `AWAM_SKILLS_LOCAL_DIR` 配置；支持子目录嵌套的 `SKILL.md`，可用 `AWAM_SKILLS_LOCAL_EXCLUDE` 按目录名排除）。由脚本出表，不靠 AI 逐步手查。
@@ -53,9 +59,9 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 - **扁平布局**：根目录 `SKILL.md`（如 `github-organize`）——**默认**
 - **嵌套布局**：`skills/<name>/SKILL.md`，根目录可放 CLI / 测试 / 领域文档（如 `windows-autostart-skill`）——仅当有根目录 CLI、多技能或需要 CONTEXT 时选用
 
-## 创建/发布/查询/升级 Skill
+## 创建/发布/查询/升级/移出管理 Skill
 
-本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布、三方查询对比与发版升级，不负责通用 Skill 优化。
+本索引仓内叠加的可安装 Skill，路径 `skills/awam-skills/SKILL.md`，name 为 `awam-skills`。负责 Awam 个人的创建、发布、三方查询对比、发版升级与移出管理，不负责通用 Skill 优化。
 
 ## 本机 repos 与版本字段
 

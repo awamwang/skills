@@ -1,23 +1,22 @@
 ---
 name: awam-skills
-version: 0.2.3
+version: 0.2.4
 description: >-
-  按 Awam 个人约定创建、发布、升级或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
+  按 Awam 个人约定创建、发布、升级、移出管理或查询 AI 技能：初始化 awam-skills 组织下的技能仓库脚手架，
   发布到 GitHub 后更新 Topics、description 与索引仓 overrides，用脚本对比组织仓 /
   索引仓远程 / 本机技能扫描根（默认 G:\Projects\19AI\skills，可由 .env 配置）的技能列表
-  与存在性，对管理中的技能做发版升号并回写 docs/repos.json 版本字段，以及把技能发布到
-  第三方平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / skills.sh / AgentPowers）并维护
-  发布规划（docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度（git 状态、
-  与远程是否同步、frontmatter、打包根、会不会把本机私密数据打进公开包）。在用户提到创建技能、
-  初始化技能仓、发布技能、升级技能版本、版本管理、收录到 awam-skills 索引、发布到平台 / 市场、
-  发布规划、查询技能列表、对比本机与线上技能，或显式调用 /awam-skills 时使用。
-  不处理通用 Skill 质量优化或对他人仓的 review。
+  与存在性，对管理中的技能做发版升号并回写 docs/repos.json 版本字段，把技能移出发布规划与本机管理映射，
+  以及把技能发布到第三方平台（LobeHub / 魔搭 ModelScope / 豆包 / ClawHub / skills.sh / AgentPowers）
+  并维护发布规划（docs/publishing-plan.json）。发布前先用 preflight.py 查一遍本机就绪度。
+  在用户提到创建技能、初始化技能仓、发布技能、升级技能版本、移出管理、不再管理某技能、版本管理、
+  收录到 awam-skills 索引、发布到平台 / 市场、发布规划、查询技能列表、对比本机与线上技能，
+  或显式调用 /awam-skills 时使用。不处理通用 Skill 质量优化或对他人仓的 review。
 disable-model-invocation: true
 ---
 
-# awam-skills（创建 / 发布 / 升级 / 查询 / 平台发布）
+# awam-skills（创建 / 发布 / 升级 / 移出管理 / 查询 / 平台发布）
 
-Awam 个人技能仓的**创建**、**发布**、**升级**、**查询**与**第三方平台发布**流程。领域词见仓库根目录 [CONTEXT.md](../../CONTEXT.md)。
+Awam 个人技能仓的**创建**、**发布**、**升级**、**移出管理**、**查询**与**第三方平台发布**流程。领域词见仓库根目录 [CONTEXT.md](../../CONTEXT.md)。
 
 ## 何时用
 
@@ -25,6 +24,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**查询**与**第
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
 | **升级技能版本 / 版本管理**（升 frontmatter version、刷新 `docs/repos.json` 版本字段） | [升级](references/upgrade.md)；固定入口 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（**禁止手改 version 代替**） |
+| **移出管理**（从 plan / repos / state 拿掉，不再升级与漂移检测） | [移出管理](references/unmanage.md)；固定入口 [scripts/unmanage_skill.py](scripts/unmanage_skill.py)（**禁止手删 JSON 代替**） |
 | **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、私密夹带、本机绝对路径） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
 | **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub / LobeHub 上传型脚本已内置，命中即中止；skills.sh 无上传环节，不适用 |
 | 仅改 frontmatter version、不回写台账 | [scripts/bump_version.py](scripts/bump_version.py)（管理流程优先 `upgrade_skill.py`） |
@@ -72,12 +72,14 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 
 ## 总流程
 
-1. 判定意图：创建 / 升级 / 发布 / 平台发布 / 查询 / 创建后发布（先创建再实现，发布另开或用户明确要求时再发）。
+1. 判定意图：创建 / 升级 / 移出管理 / 发布 / 平台发布 / 查询 / 创建后发布（先创建再实现，发布另开或用户明确要求时再发）。
 2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
 3. 按对应 reference 逐步执行；缺分类、发布目标平台等决策时**问用户**，不替用户拍板索引语义。
 4. **升级**必须跑 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（见 [升级](references/upgrade.md)）：
    升号并回写 `docs/repos.json` 版本字段；**禁止**手改 version / 只改 repos 字段。脚本不提交；
    告知用户建议 commit 信息，再按需发平台。
+4b. **移出管理**必须跑 [scripts/unmanage_skill.py](scripts/unmanage_skill.py)（见 [移出管理](references/unmanage.md)）：
+   从 plan / repos / state 去掉；**禁止**手删 JSON。不删本机目录；索引仓入库文件需用户确认后再 commit。
 5. **任何发布动作之前，先跑 [scripts/preflight.py](scripts/preflight.py)**：
    `python skills/awam-skills/scripts/preflight.py --dir <技能仓>`。
    它一次查完「发出去就收不回」的本机问题：不是 git 仓 / 工作区有未提交改动 / 本地领先远程
@@ -142,19 +144,20 @@ python skills/awam-skills/scripts/check_publish_drift.py
 
 ## 快速对照
 
-| 步骤 | 创建 | 升级 | 发布 | 查询 | 平台发布 |
-|------|------|------|------|------|----------|
-| 跑 `upgrade_skill.py` | — | ✅ **必跑** | — | — | 升号时优先 |
-| 跑 `preflight.py` | — | — | ✅ **发布前必跑** | — | ✅ **发布前必跑** |
-| `bump_version.py`（不回写台账） | — | 可选底层 | ✅ 升版本时 | — | ✅ 发魔搭/LobeHub/ClawHub 前 |
-| 本地脚手架 | ✅ | — | — | — | — |
-| `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — | — | — | — |
-| push 技能仓内容 | ❌ | ❌（用户确认后） | ✅ 仅当远程无提交 | — | — |
-| Topics / description（`publish_github.py`） | ❌（可留到发布） | — | ✅ | — | ✅（编排内会跑） |
-| 改 `skills.overrides.json` | ❌ | — | ✅ | ❌ | — |
-| 本地 `sync_skills.py` | ❌ | ❌ | ❌（交给 Actions） | ❌ | — |
-| 跑 `query_skills.py` | — | — | — | ✅ 必跑 | — |
-| 发布到第三方平台 | — | 升号后可选 | — | — | ✅ `release.py` 或各 `publish_*.py` |
-| `verify_publish.py` | — | — | — | — | ✅ 发布后复核 |
-| 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | — | ✅ 建议 | — | ✅ 脚本自动刷新 |
-| 回写 `repos.json` 版本字段 | — | ✅ 脚本自动（勿提交 repos.json） | — | — | — |
+| 步骤 | 创建 | 升级 | 移出管理 | 发布 | 查询 | 平台发布 |
+|------|------|------|----------|------|------|----------|
+| 跑 `upgrade_skill.py` | — | ✅ **必跑** | — | — | — | 升号时优先 |
+| 跑 `unmanage_skill.py` | — | — | ✅ **必跑** | — | — | — |
+| 跑 `preflight.py` | — | — | — | ✅ **发布前必跑** | — | ✅ **发布前必跑** |
+| `bump_version.py`（不回写台账） | — | 可选底层 | — | ✅ 升版本时 | — | ✅ 发魔搭/LobeHub/ClawHub 前 |
+| 本地脚手架 | ✅ | — | — | — | — | — |
+| `gh repo create awam-skills/<repo>` | ✅ 空仓 + remote | — | — | — | — | — |
+| push 技能仓内容 | ❌ | ❌（用户确认后） | — | ✅ 仅当远程无提交 | — | — |
+| Topics / description（`publish_github.py`） | ❌（可留到发布） | — | — | ✅ | — | ✅（编排内会跑） |
+| 改 `skills.overrides.json` | ❌ | — | 仅 `--also-overrides` | ✅ | ❌ | — |
+| 本地 `sync_skills.py` | ❌ | ❌ | ❌ | ❌（交给 Actions） | ❌ | — |
+| 跑 `query_skills.py` | — | — | — | — | ✅ 必跑 | — |
+| 发布到第三方平台 | — | 升号后可选 | — | — | — | ✅ `release.py` 或各 `publish_*.py` |
+| `verify_publish.py` | — | — | — | — | — | ✅ 发布后复核 |
+| 更新 `publishing-plan.json` + 跑 `plan_skills.py` | — | — | ✅ 脚本自动 | ✅ 建议 | — | ✅ 脚本自动刷新 |
+| 回写 / 清理 `repos.json` | — | ✅ 版本字段（勿提交） | ✅ 删条目（勿提交） | — | — | — |
