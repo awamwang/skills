@@ -219,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument(
         "--refresh",
         action="store_true",
-        help="按 publishing-plan 扫本机 frontmatter，回写 repos.json 版本字段并更新 example",
+        help="按 publishing-plan 扫本机 frontmatter，回写 repos.json 版本字段",
     )
     mode.add_argument("--skill", metavar="KEY", help="按规划 key 升版（需 repos.json）")
     mode.add_argument("--dir", type=Path, help="按技能仓路径升版")

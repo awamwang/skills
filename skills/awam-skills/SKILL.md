@@ -55,7 +55,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**移出管理**�
 | 分类 Topics（可选） | `skills.overrides.json` 里各类的 `topics`（如 `cat-ops`） |
 | README 写入方 | **仅** GitHub Actions「Sync Skills Catalog」——发布时**禁止**本地跑 `scripts/sync_skills.py` |
 | 发布规划权威 | `docs/publishing-plan.json`（每个技能 × 平台的 `plan`/`status`）；人读视图 `docs/publishing-plan.md` 由 [scripts/plan_skills.py](scripts/plan_skills.py) 生成，**勿手改视图** |
-| 本机路径与版本字段 | `docs/repos.json`（gitignore；模板 `repos.example.json`）：`path` + `version`/`name`/`repo`/`version_updated`/`version_reason`；由 [upgrade_skill.py](scripts/upgrade_skill.py) 刷新/回写，**勿手改代替脚本** |
+| 本机路径与版本字段 | `docs/repos.json`（gitignore）：`path` + `version`/`name`/`repo`/`version_updated`/`version_reason`；由 [upgrade_skill.py](scripts/upgrade_skill.py) 刷新/回写。`repos.example.json` 仅字段示例，非全量空清单 |
 
 ## 仓库命名
 

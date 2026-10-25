@@ -28,7 +28,6 @@ import state_store  # noqa: E402
 
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 REPOS_PATH = state_store.REPOS_PATH
-REPOS_EXAMPLE_PATH = state_store.REPOS_EXAMPLE_PATH
 
 # 版本相关字段名（写入 repo 记录）
 VERSION_FIELDS = ("version", "name", "repo", "version_updated", "version_reason")
@@ -240,36 +239,4 @@ def refresh_ledger(repos_path: Path | None = None) -> dict:
     if not state_store.save_repos(doc, repos_path):
         raise OSError(f"无法写入 repos.json：{repos_path}")
 
-    write_example_from_plan()
     return load_versions(repos_path)
-
-
-def write_example_from_plan(example_path: Path | None = None) -> None:
-    """按 publishing-plan 重写 repos.example.json（path/version 均为 null 占位）。"""
-    example_path = example_path or REPOS_EXAMPLE_PATH
-    plan = json.loads(state_store.PLAN_PATH.read_text(encoding="utf-8"))
-    skills = plan.get("skills") or {}
-    repos: dict[str, dict] = {}
-    for key in sorted(skills):
-        meta = skills[key] or {}
-        repos[key] = {
-            "path": None,
-            "version": None,
-            "name": "",
-            "repo": meta.get("repo") or f"awam-skills/{key}",
-            "version_updated": None,
-        }
-    doc = {
-        "schema_version": 1,
-        "updated": "YYYY-MM-DD",
-        "note": (
-            "本机私有：复制为 docs/repos.json 后填入克隆路径；"
-            "version / name / repo / version_updated / version_reason 由 "
-            "upgrade_skill.py --refresh 或升版时写入（勿手改代替脚本）。"
-            "repos.json 已 gitignore，勿提交。path 为 null 表示本机未找到克隆。"
-        ),
-        "repos": repos,
-    }
-    example_path.write_text(
-        json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )

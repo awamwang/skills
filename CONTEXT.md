@@ -32,7 +32,7 @@ _Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当
 
 ## 移出管理
 
-用 `skills/awam-skills/scripts/unmanage_skill.py` 把技能从管理面拿掉：删除 `publishing-plan.json` / `repos.json` / `publishing-state.json` 中对应条目，并刷新 `repos.example.json` 与规划视图。**不**删本机目录、**不**改技能仓 git、**不**改索引 README；默认不改 `skills.overrides.json`（可用 `--also-overrides`）。
+用 `skills/awam-skills/scripts/unmanage_skill.py` 把技能从管理面拿掉：删除 `publishing-plan.json` / `repos.json` / `publishing-state.json` 中对应条目，并刷新规划视图。**不**删本机目录、**不**改技能仓 git、**不**改索引 README；默认不改 `skills.overrides.json`（可用 `--also-overrides`）。
 
 _Avoid_: 手删 JSON 代替脚本；把移出管理当成卸载本机技能或删除 GitHub 仓
 
@@ -65,7 +65,7 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 
 ## 本机 repos 与版本字段
 
-`docs/repos.json`（gitignore；模板 `docs/repos.example.json`）：技能 key → 本机 `path`，以及版本管理字段：
+`docs/repos.json`（gitignore）：技能 key → 本机 `path`，以及版本管理字段。字段示意见 `docs/repos.example.json`（**仅示例**，不维护全量空清单；管理范围以 `publishing-plan.json` 为准）。
 
 | 字段 | 含义 |
 |------|------|
@@ -78,7 +78,7 @@ _Avoid_: 发布（发布会间接触发同步，但同步本身不是发布的�
 
 由 `upgrade_skill.py --refresh` / 升版回写；无本机路径时 `version` 为 null 并带 `version_reason`，不编造。
 
-_Avoid_: 手改版本字段代替跑脚本；把 `publishing-state.json`（各平台已发布 commit/version）与 repos 版本字段混为一谈；提交 `repos.json`
+_Avoid_: 手改版本字段代替跑脚本；在 `repos.example.json` 里堆全量空条目；把 `publishing-state.json` 与 repos 版本字段混为一谈；提交 `repos.json`
 
 ## 本机技能扫描根
 

@@ -24,7 +24,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import runutil  # noqa: E402
 import state_store  # noqa: E402
-import version_store  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parent
 TODAY = date.today().isoformat()
@@ -150,8 +149,6 @@ def unmanage(
     if also_overrides and overrides_doc is not None:
         _dump_json(OVERRIDES_PATH, overrides_doc)
 
-    version_store.write_example_from_plan()
-
     if refresh_view:
         view = subprocess.run(
             [sys.executable, str(SCRIPTS / "plan_skills.py")],
@@ -223,8 +220,7 @@ def main(argv: list[str] | None = None) -> int:
             f"  ⚠ 未在任何管理面找到：{', '.join(report['missing'])}"
         )
     if not args.dry_run:
-        runutil.log("  已同步 repos.example.json")
-        runutil.log("  未改本机技能目录 / 技能仓 git / 索引 README")
+        runutil.log("  未改本机技能目录 / 技能仓 git / 索引 README / repos.example.json")
         runutil.log("  索引仓变更需你确认后再 commit（repos.json 勿提交）")
     return 0 if not report["missing"] or report["repos"] or report["plan"] else 1
 

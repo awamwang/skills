@@ -22,7 +22,7 @@ python skills/awam-skills/scripts/unmanage_skill.py --skill <key> --dry-run
 ```
 
 2. 把脚本输出原样告知用户；**不要**在未明确要求时 commit 索引仓。
-3. `docs/repos.json` 已 gitignore，**勿提交**；`publishing-plan.json` / `publishing-plan.md` / `repos.example.json`（及可选的 state / overrides）可入库，需用户确认后再提交。
+3. `docs/repos.json` 已 gitignore，**勿提交**；`publishing-plan.json` / `publishing-plan.md`（及可选的 state / overrides）可入库，需用户确认后再提交。
 
 ## 会改什么
 
@@ -31,9 +31,9 @@ python skills/awam-skills/scripts/unmanage_skill.py --skill <key> --dry-run
 | `docs/repos.json` | 删除该 key |
 | `docs/publishing-plan.json` | 删除 `skills.<key>` |
 | `docs/publishing-state.json` | 若有则删除该 key |
-| `docs/repos.example.json` | 按剩余 plan 重写 |
 | `docs/publishing-plan.md` | 跑 `plan_skills.py` 刷新（可用 `--no-refresh-view` 跳过） |
 | `skills.overrides.json` | **仅** `--also-overrides` 时删除匹配的 `owner/repo` 或裸 key |
+| `docs/repos.example.json` | **不改**（仅为字段示例，非全量清单） |
 
 ## 常用参数
 
