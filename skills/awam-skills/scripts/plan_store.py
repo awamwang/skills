@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""就地更新 `docs/publishing-plan.json` 里某技能的 `status.<platform>`。
+"""就地更新 `docs/publishing-plan.json` 里某技能的 `plan.<platform>` / `status.<platform>`。
 
 为什么需要它：规划文件是**手写**的「对象单行紧凑」格式，例如
 
@@ -11,13 +11,13 @@
 
 因此这里只做**块级重写**：
 
-1. `json.loads` 拿到对象 → 在**对象层**改 `status.<platform>`（值正确性由此保证，不用正则）；
+1. `json.loads` 拿到对象 → 在**对象层**改 `plan|status.<platform>`（值正确性由此保证，不用正则）；
 2. 用括号配对扫描器定位该技能块在原文中的区间（跳过字符串，正确处理花括号）；
-3. 只重生成该块内的 `status` 那一行（统一紧凑格式，**每行一个平台对象**）；
+3. 只重生成该块内的 `plan` / `status` 那一行（统一紧凑格式，**每行一个平台对象**）；
 4. 其余所有行原样保留 —— 其他技能、platforms 段、tiers 段都不动；
 5. 原子写盘（临时文件 + `os.replace`），避免中途崩溃截断文件。
 
-对外只暴露一个函数：`set_status(plan_path, skill_key, platform, status) -> bool`。
+对外：`set_status(...)` / `set_plan(...)`。
 """
 
 from __future__ import annotations
@@ -26,6 +26,8 @@ import json
 import os
 import tempfile
 from pathlib import Path
+
+_MAP_FIELDS = frozenset({"plan", "status"})
 
 
 def _value_span(text: str, key: str) -> tuple[int, int] | None:
@@ -110,11 +112,22 @@ def _atomic_write(path: Path, text: str) -> None:
         raise
 
 
-def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "done") -> bool:
-    """把 `skills.<skill_key>.status.<platform>` 就地改成 `status`。
+def _set_skill_map_field(
+    plan_path: Path,
+    skill_key: str,
+    platform: str,
+    value: str,
+    *,
+    field: str,
+) -> bool:
+    """把 `skills.<skill_key>.<field>.<platform>` 就地改成 `value`。
 
+    `field` 仅允许 `plan` / `status`。
     成功返回 True（含「值本来就相同，无需改动」）；定位失败 / JSON 非法返回 False。
     """
+    if field not in _MAP_FIELDS:
+        raise ValueError(f"field 须为 plan|status，收到 {field!r}")
+
     plan_path = Path(plan_path)
     text = plan_path.read_text(encoding="utf-8")
     try:
@@ -128,33 +141,33 @@ def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "do
         return False
 
     # 1) 先在对象层改值 —— 保证写出的内容正确
-    st = entry.get("status")
-    if not isinstance(st, dict):
+    mapping = entry.get(field)
+    if not isinstance(mapping, dict):
         return False
-    if st.get(platform) == status:
+    if mapping.get(platform) == value:
         return True  # 值本来就相同
-    st[platform] = status
+    mapping[platform] = value
 
-    # 2) 定位该技能块，只重写块内 status 那一行
+    # 2) 定位该技能块，只重写块内 field 那一行
     span = _value_span(text, skill_key)
     if span is None:
         return False
     lo, hi = span
     block = text[lo:hi + 1]
 
-    st_span = _value_span(block, "status")
-    if st_span is None:
+    field_span = _value_span(block, field)
+    if field_span is None:
         return False
-    slo, shi = st_span
+    flo, fhi = field_span
     # 相对原文的绝对区间
-    abs_slo, abs_shi = lo + slo, lo + shi
-    line_lo, line_hi = _line_span(text, abs_slo)
-    prefix = text[line_lo:abs_slo]  # 缩进 + `"status": `
+    abs_flo, abs_fhi = lo + flo, lo + fhi
+    line_lo, _line_hi = _line_span(text, abs_flo)
+    prefix = text[line_lo:abs_flo]  # 缩进 + `"plan": ` / `"status": `
     # 对象结束位置到它所在行末的字符：单行时通常是 "" 或尾随逗号 ","；
-    # status 对象若跨多行（如文件被 indent=2 格式化过），这里会吃掉收尾行余下内容。
-    end_line_hi = _line_span(text, abs_shi)[1]
-    suffix = text[abs_shi + 1:end_line_hi]
-    new_text = text[:line_lo] + prefix + _compact(st) + suffix + text[end_line_hi:]
+    # 对象若跨多行（如文件被 indent=2 格式化过），这里会吃掉收尾行余下内容。
+    end_line_hi = _line_span(text, abs_fhi)[1]
+    suffix = text[abs_fhi + 1:end_line_hi]
+    new_text = text[:line_lo] + prefix + _compact(mapping) + suffix + text[end_line_hi:]
 
     if new_text == text:
         return True
@@ -164,3 +177,17 @@ def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "do
         return False
     _atomic_write(plan_path, new_text)
     return True
+
+
+def set_status(plan_path: Path, skill_key: str, platform: str, status: str = "done") -> bool:
+    """把 `skills.<skill_key>.status.<platform>` 就地改成 `status`。"""
+    return _set_skill_map_field(
+        plan_path, skill_key, platform, status, field="status"
+    )
+
+
+def set_plan(plan_path: Path, skill_key: str, platform: str, value: str) -> bool:
+    """把 `skills.<skill_key>.plan.<platform>` 就地改成 `value`（publish/optional/skip）。"""
+    return _set_skill_map_field(
+        plan_path, skill_key, platform, value, field="plan"
+    )

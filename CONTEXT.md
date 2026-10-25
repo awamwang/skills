@@ -111,6 +111,12 @@ _Avoid_: 手改 `publishing-plan.md` 视图（由脚本生成）；漏登记新�
 
 _Avoid_: 在平台之外另造市场 / 清单文件作为发布依据
 
+## 管理控制台
+
+本机 Web UI：`skills/awam-skills/scripts/manage_console.py`（默认 `http://127.0.0.1:8754/`）。勾选改 `publishing-plan.json` 的 `plan`（保存后刷新 md 视图），多选技能批量升级 / 移出管理 / 发布。**规划保存与真正发版是两条独立操作**，改 plan 不会自动跑 `release.py`。
+
+_Avoid_: 当远程管理面；用手改 JSON 代替「保存规划」；把控制台发布当成可跳过 preflight 的捷径
+
 ## Non-goals（本 Skill 明确不做）
 
 - 通用 Skill 质量/结构优化（progressive disclosure、跨 harness、skill-creator-advanced 等）

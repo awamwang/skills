@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>技能管理控制台</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>技能管理控制台</h1>
+      <p class="sub">规划保存与真正发版分开 · 仅本机</p>
+    </div>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <section class="toolbar">
+    <div class="group">
+      <label class="chk"><input type="checkbox" id="selectAll" /> 全选</label>
+      <span id="selCount" class="muted">已选 0</span>
+    </div>
+
+    <div class="group plan-ops">
+      <button type="button" id="btnSavePlan" class="primary" disabled>保存规划</button>
+      <span id="dirtyHint" class="hint hidden">有未保存的规划改动</span>
+    </div>
+
+    <div class="group">
+      <label>升号
+        <select id="bumpPart">
+          <option value="patch" selected>patch</option>
+          <option value="minor">minor</option>
+          <option value="major">major</option>
+        </select>
+      </label>
+      <button type="button" id="btnUpgrade">升级</button>
+      <button type="button" id="btnUnmanage" class="danger">移出管理</button>
+    </div>
+
+    <div class="group release-ops">
+      <span class="label">本次发布平台</span>
+      <div id="releasePlatforms" class="plat-checks"></div>
+      <button type="button" id="btnRelease" class="accent">批量发布</button>
+    </div>
+  </section>
+
+  <section class="filter-bar">
+    <input type="search" id="filter" placeholder="筛选 key / repo / summary…" />
+    <label>tier
+      <select id="tierFilter">
+        <option value="">全部</option>
+      </select>
+    </label>
+  </section>
+
+  <main class="table-wrap">
+    <table id="skillTable">
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </main>
+
+  <section class="log-panel">
+    <div class="log-head">
+      <strong>日志</strong>
+      <button type="button" id="btnClearLog" class="ghost">清空</button>
+    </div>
+    <pre id="log"></pre>
+  </section>
+
+  <div id="busy" class="busy hidden" aria-live="polite">
+    <div class="busy-card">执行中，请稍候…</div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

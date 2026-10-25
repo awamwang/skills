@@ -36,6 +36,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**移出管理**�
 | 平台凭据（token）从哪来 | [凭据管理](references/platforms.md#凭据管理通用)：由 [scripts/credentials.py](scripts/credentials.py) 自动查找，**不要向用户索要**——先跑 `--show-credentials` |
 | 依赖没装 / 报缺模块 | 跑 [scripts/setup_env.py](scripts/setup_env.py)（幂等，含魔搭 SDK `modelscope_hub`） |
 | 列组织 / 索引远程 / 本机技能并对比 | [查询](references/query.md) |
+| **本机管理控制台**（勾选改规划、多选升级 / 移出管理 / 批量发布；规划与发版分开） | [scripts/manage_console.py](scripts/manage_console.py)（`python skills/awam-skills/scripts/manage_console.py [--open]`） |
 | 改 skill 结构、写更好的 prompt、通用质量优化 | **拒绝**（Non-goals） |
 
 ## Non-goals
