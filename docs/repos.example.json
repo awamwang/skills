@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "updated": "YYYY-MM-DD",
+  "note": "本机私有：复制为 docs/repos.json 后填入克隆路径。repos.json 已 gitignore，勿提交。path 为 null 表示本机未找到克隆。",
+  "repos": {
+    "ssh-deploy-skill": { "path": null },
+    "awam-git-skill": { "path": null },
+    "github-organize": { "path": null },
+    "letsencrypt-windows-skill": { "path": null },
+    "quicker-connector": { "path": null },
+    "awam-windows-backup-skill": { "path": null },
+    "awam-todo-skill": { "path": null },
+    "wiz-migration": { "path": null },
+    "stock-hots-skill": { "path": null },
+    "awam-shandianshuo-skill": { "path": null },
+    "windows-autostart-skill": { "path": null }
+  }
+}

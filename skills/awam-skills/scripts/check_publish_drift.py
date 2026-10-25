@@ -3,7 +3,7 @@
 
 数据三处对齐：
 - docs/publishing-plan.json —— 哪些平台 status=done（只有 done 才值得问要不要重发）
-- docs/repos.json           —— 技能仓本地克隆路径（path=null 表示本机没有）
+- docs/repos.json           —— 本机私有路径映射（gitignore；模板 repos.example.json）
 - docs/publishing-state.json —— 各平台最近发布时的 commit / version（state_store.py 写）
 
 判定规则：
@@ -70,7 +70,7 @@ def git_info(repo_dir: Path) -> dict:
 def collect_rows() -> tuple[list[dict], list[str]]:
     """汇总所有 status=done 的技能 × 平台为行列表；返回 (rows, 全局提示)。"""
     plan = json.loads(state_store.PLAN_PATH.read_text(encoding="utf-8"))
-    repos_cfg = json.loads(state_store.REPOS_PATH.read_text(encoding="utf-8"))
+    repos_cfg = state_store.load_repos()
     state = state_store.load_state()
     platform_order = list((plan.get("platforms") or {}).keys())
     notes: list[str] = []
@@ -91,7 +91,7 @@ def collect_rows() -> tuple[list[dict], list[str]]:
             continue
         repo_dir = Path(repo_path)
         if not repo_dir.is_dir():
-            notes.append(f"{skill_key}: repos.json 指向的目录不存在 {repo_path}，请更新映射")
+            notes.append(f"{skill_key}: repos.json 指向的目录不存在，请更新本机映射")
             continue
         info = git_info(repo_dir)
         if info.get("error"):
@@ -150,14 +150,18 @@ def print_report(rows: list[dict], notes: list[str]) -> int:
 
 
 def do_record(skill_key: str, platform: str) -> int:
-    repos_cfg = json.loads(state_store.REPOS_PATH.read_text(encoding="utf-8"))
+    try:
+        repos_cfg = state_store.load_repos()
+    except FileNotFoundError as e:
+        log(f"✗ {e}")
+        return 2
     repo = (repos_cfg.get("repos") or {}).get(skill_key)
     if not repo or not repo.get("path"):
         log(f"✗ repos.json 里没有 {skill_key} 的本地路径，先补映射")
         return 2
     repo_dir = Path(repo["path"])
     if not repo_dir.is_dir():
-        log(f"✗ 目录不存在：{repo['path']}")
+        log(f"✗ 目录不存在（请检查本机 docs/repos.json 映射）")
         return 2
     if state_store.record_publish_from_repo(state_store.STATE_PATH, repo_dir, skill_key, platform):
         head = state_store.git_head(repo_dir)
@@ -169,7 +173,11 @@ def do_record(skill_key: str, platform: str) -> int:
 
 def do_record_baseline() -> int:
     plan = json.loads(state_store.PLAN_PATH.read_text(encoding="utf-8"))
-    repos_cfg = json.loads(state_store.REPOS_PATH.read_text(encoding="utf-8"))
+    try:
+        repos_cfg = state_store.load_repos()
+    except FileNotFoundError as e:
+        log(f"✗ {e}")
+        return 2
     state = state_store.load_state()
     platform_order = list((plan.get("platforms") or {}).keys())
     n = 0

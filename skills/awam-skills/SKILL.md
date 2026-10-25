@@ -121,8 +121,9 @@ rm -rf "$DST/scripts/__pycache__"
 python skills/awam-skills/scripts/check_publish_drift.py
 ```
 
-它对比三份数据——`docs/publishing-plan.json`（哪些平台 status=done）、`docs/repos.json`
-（本地克隆路径映射）、`docs/publishing-state.json`（各平台最近发布的 commit / version）——
+它对比三份数据——`docs/publishing-plan.json`（哪些平台 status=done）、本机私有的
+`docs/repos.json`（克隆路径映射，已 gitignore；缺则从 `docs/repos.example.json` 复制）、
+`docs/publishing-state.json`（各平台最近发布的 commit / version）——
 列出**本地已前进但平台没跟上**的条目。检测到漂移时用 question **逐个问用户**是否现在发布；
 确认后照常 preflight + 平台发布流程，不要默默替用户发。退出码 0=无漂移 / 1=有待发布。
 
@@ -131,7 +132,7 @@ python skills/awam-skills/scripts/check_publish_drift.py
   `check_publish_drift.py --record <技能 key> <platform>` 或豆包脚本 `--mark-done`；
 - **新标 done 的平台**没有历史记录：`--record-baseline` 以当前 HEAD 批量回填基线
   （基线之后的新提交才算待发布）；
-- 技能仓挪目录 / 换机器：手工更新 `docs/repos.json`。
+- 技能仓挪目录 / 换机器：只改本机 `docs/repos.json`，**不要提交**该文件。
 
 ## 快速对照
 

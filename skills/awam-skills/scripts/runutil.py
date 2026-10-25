@@ -129,7 +129,7 @@ def resolve_skill_key(skill_dir: Path, explicit: str | None = None,
     skill_dir = Path(skill_dir).resolve()
     repos = {}
     try:
-        repos = json.loads(state_store.REPOS_PATH.read_text(encoding="utf-8")).get("repos") or {}
+        repos = state_store.load_repos().get("repos") or {}
     except (OSError, json.JSONDecodeError):
         pass
     for key, meta in repos.items():

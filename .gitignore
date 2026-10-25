@@ -2,6 +2,10 @@
 .credentials.local.json
 *.credentials.json
 
+# 本机技能克隆路径映射（含绝对路径 / 用户目录，勿入库；模板见 docs/repos.example.json）
+docs/repos.json
+
+
 # Python 字节码
 __pycache__/
 *.pyc

@@ -28,6 +28,7 @@ import public_files  # noqa: E402  （打包根定位：见 public_files.py）
 INDEX_ROOT = Path(__file__).resolve().parents[3]
 STATE_PATH = INDEX_ROOT / "docs" / "publishing-state.json"
 REPOS_PATH = INDEX_ROOT / "docs" / "repos.json"
+REPOS_EXAMPLE_PATH = INDEX_ROOT / "docs" / "repos.example.json"
 PLAN_PATH = INDEX_ROOT / "docs" / "publishing-plan.json"
 
 
@@ -35,6 +36,22 @@ def load_state(path: Path = STATE_PATH) -> dict:
     """读状态文件；不存在时返回空骨架（首次 --record 前的状态）。"""
     if not path.exists():
         return {"schema_version": 1, "updated": "", "skills": {}}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_repos(path: Path = REPOS_PATH) -> dict:
+    """读本机路径映射；文件不入库，缺失时提示从 example 复制。"""
+    if not path.exists():
+        example = REPOS_EXAMPLE_PATH
+        if example.exists():
+            raise FileNotFoundError(
+                f"缺少本机路径映射：{path}\n"
+                f"  请复制 {example.name} 为 repos.json 并填入本机克隆路径"
+                f"（repos.json 已 gitignore，勿提交）"
+            )
+        raise FileNotFoundError(
+            f"缺少本机路径映射：{path}（该文件不入库，需在本机自行维护）"
+        )
     return json.loads(path.read_text(encoding="utf-8"))
 
 
