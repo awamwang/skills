@@ -3,16 +3,143 @@
   "updated": "YYYY-MM-DD",
   "note": "本机私有：复制为 docs/repos.json 后填入克隆路径。repos.json 已 gitignore，勿提交。path 为 null 表示本机未找到克隆。",
   "repos": {
-    "ssh-deploy-skill": { "path": null },
-    "awam-git-skill": { "path": null },
-    "github-organize": { "path": null },
-    "letsencrypt-windows-skill": { "path": null },
-    "quicker-connector": { "path": null },
-    "awam-windows-backup-skill": { "path": null },
-    "awam-todo-skill": { "path": null },
-    "wiz-migration": { "path": null },
-    "stock-hots-skill": { "path": null },
-    "awam-shandianshuo-skill": { "path": null },
-    "windows-autostart-skill": { "path": null }
+    "a-stock-data-skill": {
+      "path": null
+    },
+    "awam-aliyun-skill": {
+      "path": null
+    },
+    "awam-ark-skill": {
+      "path": null
+    },
+    "awam-git-skill": {
+      "path": null
+    },
+    "awam-pc-assets-skill": {
+      "path": null
+    },
+    "awam-shandianshuo-skill": {
+      "path": null
+    },
+    "awam-skill": {
+      "path": null
+    },
+    "awam-tax-skill": {
+      "path": null
+    },
+    "awam-tencent-cloud-skill": {
+      "path": null
+    },
+    "awam-todo-skill": {
+      "path": null
+    },
+    "awam-tool-manager-skill": {
+      "path": null
+    },
+    "awam-windows-backup-skill": {
+      "path": null
+    },
+    "bitwarden-skill": {
+      "path": null
+    },
+    "economic-calendar-skill": {
+      "path": null
+    },
+    "github-organize": {
+      "path": null
+    },
+    "github-skill": {
+      "path": null
+    },
+    "html-anim-video-maker-skill": {
+      "path": null
+    },
+    "html-ppt-maker-skill": {
+      "path": null
+    },
+    "lark-send-skill": {
+      "path": null
+    },
+    "letsencrypt-windows-skill": {
+      "path": null
+    },
+    "limellm-config-skill": {
+      "path": null
+    },
+    "material-collector-skill": {
+      "path": null
+    },
+    "obs-skill": {
+      "path": null
+    },
+    "pptx-maker-local-skill": {
+      "path": null
+    },
+    "pptx-maker-skill": {
+      "path": null
+    },
+    "quicker-connector": {
+      "path": null
+    },
+    "remote-tarball-install-skill": {
+      "path": null
+    },
+    "screenshot-video-maker-skill": {
+      "path": null
+    },
+    "site-deploy-skill": {
+      "path": null
+    },
+    "ssh-deploy-skill": {
+      "path": null
+    },
+    "stock-code-list-skill": {
+      "path": null
+    },
+    "stock-hots-skill": {
+      "path": null
+    },
+    "toolport-skill": {
+      "path": null
+    },
+    "tutor-setup-skill": {
+      "path": null
+    },
+    "tutor-skill": {
+      "path": null
+    },
+    "video-chapters-export-skill": {
+      "path": null
+    },
+    "video-content-cleaner-skill": {
+      "path": null
+    },
+    "video-publisher-skill": {
+      "path": null
+    },
+    "video-segment-semantics-skill": {
+      "path": null
+    },
+    "video-use-skill": {
+      "path": null
+    },
+    "windows-autostart-skill": {
+      "path": null
+    },
+    "windows-clean-skill": {
+      "path": null
+    },
+    "windows-view-mode-skill": {
+      "path": null
+    },
+    "wiz-migration": {
+      "path": null
+    },
+    "workspace-project-registry-skill": {
+      "path": null
+    },
+    "ximalaya-downloader-skill": {
+      "path": null
+    }
   }
 }
