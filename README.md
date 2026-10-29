@@ -56,7 +56,7 @@
 | 技能 | 简介 |
 |------|------|
 | [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | Issue, renew, and maintain Let's Encrypt TLS certificates on Windows via ACME. Routes among win-acme, Posh-ACME, and Certify The Web; covers HTTP-01/DNS-01,… |
-| [stock-hots-skill](https://github.com/awam-skills/stock-hots-skill) | 获取并聚合多平台热门股票榜单（东方财富/同花顺/通达信/淘股吧/财联社/开盘啦/雪球/大智慧），输出综合前十与各平台 TOP-N |
+| [stock-hots-skill](https://github.com/awam-skills/stock-hots-skill) | 获取并聚合多平台热门股票榜单（东方财富/同花顺/通达信/淘股吧/财联社/开盘啦/雪球/大智慧），输出综合前十与各平台 TOP-N。用户要热门股票、热榜排行、多平台榜单对比或榜单数据汇总时使用。 |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
 
 ## 说明
