@@ -23,7 +23,7 @@ Awam 个人技能仓的**创建**、**发布**、**升级**、**移出管理**�
 | 用户意图 | 走哪条 |
 |----------|--------|
 | 新建 / 初始化技能仓 | [创建](references/create.md) |
-| **升级技能版本 / 版本管理**（升 frontmatter version、刷新 `docs/repos.json` 版本字段） | [升级](references/upgrade.md)；固定入口 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（**禁止手改 version 代替**） |
+| **升级技能版本 / 版本管理**（工作区须干净 → 升 version → 回写 repos → 自动 commit；不 push） | [升级](references/upgrade.md)；固定入口 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（**禁止手改 version 代替**） |
 | **移出管理**（从 plan / repos / state 拿掉，不再升级与漂移检测） | [移出管理](references/unmanage.md)；固定入口 [scripts/unmanage_skill.py](scripts/unmanage_skill.py)（**禁止手删 JSON 代替**） |
 | **发布前的本机就绪检查**（git 状态、与远程是否同步、frontmatter、打包根、私密夹带、本机绝对路径） | [scripts/preflight.py](scripts/preflight.py)（**任何发布动作之前先跑**） |
 | **发布包敏感串扫描**（凭据 / 私钥 / token 会不会被打进包） | [scripts/preflight_secrets.py](scripts/preflight_secrets.py)；魔搭 / 豆包 / ClawHub / LobeHub 上传型脚本已内置，命中即中止；skills.sh 无上传环节，不适用 |
@@ -77,8 +77,8 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
 2. 读 [CONTEXT.md](../../CONTEXT.md) 与相关 ADR（`docs/adr/`）。
 3. 按对应 reference 逐步执行；缺分类、发布目标平台等决策时**问用户**，不替用户拍板索引语义。
 4. **升级**必须跑 [scripts/upgrade_skill.py](scripts/upgrade_skill.py)（见 [升级](references/upgrade.md)）：
-   升号并回写 `docs/repos.json` 版本字段；**禁止**手改 version / 只改 repos 字段。脚本不提交；
-   告知用户建议 commit 信息，再按需发平台。
+   工作区须干净（否则中止报错）→ 升号并回写 `docs/repos.json` 版本字段 → **默认自动 commit**
+   （不 push）；**禁止**手改 version / 只改 repos 字段。告知用户再按需 push / 发平台。
 4b. **移出管理**必须跑 [scripts/unmanage_skill.py](scripts/unmanage_skill.py)（见 [移出管理](references/unmanage.md)）：
    从 plan / repos / state 去掉；**禁止**手删 JSON。不删本机目录；索引仓入库文件需用户确认后再 commit。
 5. **任何发布动作之前，先跑 [scripts/preflight.py](scripts/preflight.py)**：
@@ -87,8 +87,8 @@ repo_name = name if name.endswith("-skill") else f"{name}-skill"
    （发的内容与 GitHub 对不上）/ frontmatter 缺 `version`（魔搭硬要求）/ 打包根定不下来
    / 私密文件已被 git 跟踪 / 疑似本机绝对路径 / 索引仓副本与安装副本内容不一致。
    结果 `FAIL` 时**不要发布**，先处理。
-6. 升号后 commit + push 技能仓，再发平台（管理流程用 `upgrade_skill.py`；仅改文件可用
-   [bump_version.py](scripts/bump_version.py)，但不回写台账）。
+6. 升号（已由脚本 commit）后按需 push 技能仓，再发平台（管理流程用 `upgrade_skill.py`；仅改文件可用
+   [bump_version.py](scripts/bump_version.py)，但不回写台账、不 commit）。
 7. **查询**必须跑 [scripts/query_skills.py](scripts/query_skills.py)，禁止用手搓 `gh`/扫目录代替。
 8. **平台发布 / 规划更新**优先走 [scripts/release.py](scripts/release.py) 编排
    （内部调 preflight + 各 `publish_*.py` + `verify_publish.py`）；

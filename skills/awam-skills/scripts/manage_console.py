@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """本机技能管理控制台：改发布规划 + 批量升级 / 移出管理 / 发布。
 
-仅绑定 127.0.0.1。规划保存与真正发版分开；不替用户 commit / push。
+仅绑定 127.0.0.1。规划保存与真正发版分开。升级走 upgrade_skill（干净检查 + 自动 commit，不 push）。
 
 用法：
   python skills/awam-skills/scripts/manage_console.py

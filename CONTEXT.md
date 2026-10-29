@@ -26,9 +26,9 @@ _Avoid_: 上架、publish to marketplace
 
 ## 升级
 
-对**发布规划内**已管理技能做发版升号：用 `skills/awam-skills/scripts/upgrade_skill.py` 提升技能仓 `SKILL.md` frontmatter `version`，并回写本机 `docs/repos.json` 对应条目的版本字段。权威 version 仍在技能仓；repos 上的 version 字段是本机管理快照（gitignore）。脚本**不**自动 commit / push；升号后由用户提交，再按需走平台发布（`release.py`）。可用 `--refresh` 从本机克隆重刷版本字段，`--list` 只读列出。
+对**发布规划内**已管理技能做发版升号：用 `skills/awam-skills/scripts/upgrade_skill.py` 先检查技能仓工作区是否干净（不干净则中止报错），再提升 `SKILL.md` frontmatter `version`，回写本机 `docs/repos.json` 对应条目的版本字段，并**自动 commit**（信息形如 `feat(skills): 升级至 x.y.z`；**不** push）。权威 version 仍在技能仓；repos 上的 version 字段是本机管理快照（gitignore）。可用 `--no-commit` 只改文件；`--refresh` 重刷版本字段；`--list` 只读列出。升号 commit 后由用户按需 push，再走平台发布（`release.py`）。
 
-_Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把 repos 版本字段当成权威源
+_Avoid_: 本机 `git pull` / Agent 安装路径同步；把手改 version 行当作升级；把 repos 版本字段当成权威源；在工作区脏时强行升号
 
 ## 移出管理
 
@@ -114,6 +114,8 @@ _Avoid_: 在平台之外另造市场 / 清单文件作为发布依据
 ## 管理控制台
 
 本机 Web UI：`skills/awam-skills/scripts/manage_console.py`（默认 `http://127.0.0.1:8754/`）。勾选改 `publishing-plan.json` 的 `plan`（保存后刷新 md 视图），多选技能批量升级 / 移出管理 / 发布。**规划保存与真正发版是两条独立操作**，改 plan 不会自动跑 `release.py`。
+
+界面按 **Material Design 3** 实现：`manage_console/style.css` 里是唯一的令牌源（light / dark 两组，由 `<html data-theme>` 切换），前端零外部依赖，确认框用 MD3 对话框而非 `window.confirm`。改视觉只动 `style.css` 的令牌，不要散写颜色值。
 
 _Avoid_: 当远程管理面；用手改 JSON 代替「保存规划」；把控制台发布当成可跳过 preflight 的捷径
 

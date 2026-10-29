@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""技能发版升级：刷新 repos 版本字段 / 提升 frontmatter version / 可选衔接 release。
+"""技能发版升级：刷新 repos 版本字段 / 提升 frontmatter version / 自动 commit。
 
 权威 version 在技能仓 SKILL.md；版本管理快照写在本机 docs/repos.json 各 repo 记录上
-（见 docs/repos.example.json）。不替用户 commit / push。
+（见 docs/repos.example.json）。升版前要求技能仓工作区干净；升号后默认自动 commit
+（不 push）。可用 --no-commit 只改文件不提交。
 
 用法：
   python skills/awam-skills/scripts/upgrade_skill.py --list
@@ -10,6 +11,7 @@
   python skills/awam-skills/scripts/upgrade_skill.py --skill <key> --part patch
   python skills/awam-skills/scripts/upgrade_skill.py --dir <技能仓> --to 1.2.0
   python skills/awam-skills/scripts/upgrade_skill.py --skill <key> --part patch --dry-run
+  python skills/awam-skills/scripts/upgrade_skill.py --skill <key> --part patch --no-commit
   python skills/awam-skills/scripts/upgrade_skill.py --skill <key> --part patch --release
 """
 
@@ -96,14 +98,39 @@ def do_refresh(*, dry_run: bool) -> int:
     return do_list(data)
 
 
+def git_dirty(skill_dir: Path) -> bool:
+    out = runutil.run_git(skill_dir, "status", "--porcelain")
+    if out.returncode != 0:
+        return True
+    return bool((out.stdout or "").strip())
+
+
+def require_clean(skill_dir: Path, *, dry_run: bool) -> None:
+    """升版前要求技能仓工作区干净；不干净则中止抛错。"""
+    out = runutil.run_git(skill_dir, "status", "--porcelain")
+    if out.returncode != 0:
+        detail = ((out.stderr or out.stdout) or "").strip() or f"exit {out.returncode}"
+        raise SystemExit(f"无法检查 git 状态：{skill_dir}\n{detail}")
+    dirty = (out.stdout or "").strip()
+    if not dirty:
+        runutil.log("  工作区干净")
+        return
+    prefix = "[dry-run] " if dry_run else ""
+    raise SystemExit(
+        f"{prefix}工作区不干净，已中止升级：{skill_dir}\n"
+        f"{dirty}\n"
+        "请先提交或清理未提交改动后再升级。"
+    )
+
+
 def apply_bump(
     skill_dir: Path,
     *,
     part: str | None,
     to: str | None,
     dry_run: bool,
-) -> tuple[str, str, dict]:
-    """返回 (old, new, frontmatter)。"""
+) -> tuple[str, str, dict, list[str]]:
+    """返回 (old, new, frontmatter, 相对 skill_dir 的已改路径列表)。"""
     root, note = public_files.find_skill_root(skill_dir)
     if root is None:
         raise SystemExit(f"找不到 SKILL.md：{note}")
@@ -123,7 +150,7 @@ def apply_bump(
     runutil.log(f"打包根：{root}（{note}）")
     if cur == new_ver:
         runutil.log(f"version 已是 {cur}，无需改动")
-        return cur, new_ver, fm
+        return cur, new_ver, fm, []
 
     targets = [root / "SKILL.md"]
     zh = root / "SKILL.zh-CN.md"
@@ -133,13 +160,14 @@ def apply_bump(
     if dry_run:
         for t in targets:
             runutil.log(f"  [dry-run] 将改 {t.relative_to(skill_dir).as_posix()}")
-        return cur, new_ver, fm
+        return cur, new_ver, fm, [t.relative_to(skill_dir).as_posix() for t in targets]
 
-    changed = []
+    changed: list[str] = []
     for t in targets:
         if runutil.set_frontmatter_version(t, new_ver):
-            changed.append(t.relative_to(skill_dir).as_posix())
-            runutil.log(f"  ✅ 已写 {t.relative_to(skill_dir).as_posix()}")
+            rel = t.relative_to(skill_dir).as_posix()
+            changed.append(rel)
+            runutil.log(f"  ✅ 已写 {rel}")
         else:
             runutil.log(
                 f"  ⚠ 跳过 {t.relative_to(skill_dir).as_posix()}"
@@ -147,7 +175,7 @@ def apply_bump(
             )
     if not changed:
         raise SystemExit("没有文件被改写")
-    return cur, new_ver, fm
+    return cur, new_ver, fm, changed
 
 
 def update_ledger_entry(
@@ -174,20 +202,32 @@ def update_ledger_entry(
     runutil.log(f"  ✅ repos 已更新：{skill_key} = {new_ver}")
 
 
-def git_dirty(skill_dir: Path) -> bool:
-    out = runutil.run_git(skill_dir, "status", "--porcelain")
+def commit_bump(skill_dir: Path, new_ver: str, changed: list[str]) -> None:
+    """将升号改动提交到技能仓（不 push）。"""
+    if not changed:
+        return
+    msg = f"feat(skills): 升级至 {new_ver}"
+    for rel in changed:
+        out = runutil.run_git(skill_dir, "add", "--", rel)
+        if out.returncode != 0:
+            detail = ((out.stderr or out.stdout) or "").strip()
+            raise SystemExit(f"git add 失败（{rel}）：{detail}")
+    out = runutil.run_git(skill_dir, "commit", "-m", msg)
     if out.returncode != 0:
-        return True
-    return bool((out.stdout or "").strip())
+        detail = ((out.stderr or out.stdout) or "").strip()
+        raise SystemExit(f"git commit 失败：{detail}")
+    runutil.log(f"  ✅ 已提交：{msg}")
+    summary = ((out.stdout or "").strip().splitlines() or [""])[0]
+    if summary:
+        runutil.log(f"     {summary}")
 
 
 def do_release(skill_dir: Path, skill_key: str | None, extra: list[str]) -> int:
     if git_dirty(skill_dir):
         runutil.log(
-            "✗ 工作区有未提交改动（含刚升的 version）。"
-            "请先按 awam-git 规范 commit + push，再单独跑 release，或去掉 --release 分步做。"
+            "✗ 工作区有未提交改动。"
+            "请先清理后再 --release，或去掉 --release 分步做。"
         )
-        runutil.log("  建议提交：feat(skills): 升级至 <新版本>")
         runutil.log(
             f"  随后：python skills/awam-skills/scripts/release.py --dir {skill_dir}"
             + (f" --skill {skill_key}" if skill_key else "")
@@ -208,7 +248,7 @@ def do_release(skill_dir: Path, skill_key: str | None, extra: list[str]) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="技能发版升级：repos 版本字段刷新 / 升 version / 可选衔接 release"
+        description="技能发版升级：repos 版本字段刷新 / 升 version / 自动 commit"
     )
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument(
@@ -228,11 +268,16 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--part", choices=["major", "minor", "patch"], help="semver 段递增")
     g.add_argument("--to", metavar="X.Y.Z", help="直接设为目标版本")
 
-    ap.add_argument("--dry-run", action="store_true", help="只打印，不写盘")
+    ap.add_argument("--dry-run", action="store_true", help="只打印，不写盘 / 不提交")
+    ap.add_argument(
+        "--no-commit",
+        action="store_true",
+        help="升号后不自动 commit（默认会提交 version 改动）",
+    )
     ap.add_argument(
         "--release",
         action="store_true",
-        help="升版后若工作区干净则调用 release.py；有未提交改动则提示分步",
+        help="升版并 commit 后若工作区干净则调用 release.py",
     )
     ap.add_argument(
         "--release-args",
@@ -261,7 +306,9 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"目录不存在：{skill_dir}")
         skill_key = runutil.resolve_skill_key(skill_dir)
 
-    cur, new_ver, fm = apply_bump(
+    require_clean(skill_dir, dry_run=args.dry_run)
+
+    cur, new_ver, fm, changed = apply_bump(
         skill_dir, part=args.part, to=args.to, dry_run=args.dry_run
     )
     if skill_key:
@@ -269,14 +316,28 @@ def main(argv: list[str] | None = None) -> int:
     else:
         runutil.log("  ⚠ 未能解析 planning key，跳过 repos 回写（可显式 --skill）")
 
-    if cur != new_ver or args.dry_run:
-        runutil.log(f"建议提交：feat(skills): 升级至 {new_ver}")
-        runutil.log("下一步：commit + push 技能仓，再跑 preflight / release")
+    if cur == new_ver and not args.dry_run:
+        runutil.log("无需提交（version 未变）")
+    elif args.dry_run:
+        if args.no_commit:
+            runutil.log("  [dry-run] 将跳过 commit（--no-commit）")
+        else:
+            runutil.log(f"  [dry-run] 将提交：feat(skills): 升级至 {new_ver}")
+        runutil.log("下一步：确认后去掉 --dry-run 执行；再按需 push / release")
+    elif args.no_commit:
+        runutil.log(f"已跳过 commit（--no-commit）。建议：feat(skills): 升级至 {new_ver}")
+        runutil.log("下一步：自行 commit + push 技能仓，再跑 preflight / release")
+    else:
+        commit_bump(skill_dir, new_ver, changed)
+        runutil.log("下一步：按需 push 技能仓，再跑 preflight / release")
 
     if args.release:
         if args.dry_run:
             runutil.log("  [dry-run] 跳过 --release")
             return 0
+        if args.no_commit and cur != new_ver:
+            runutil.log("✗ --release 需要已提交的 version；去掉 --no-commit 或先自行 commit")
+            return 2
         extra = args.release_args.split() if args.release_args.strip() else []
         return do_release(skill_dir, skill_key, extra)
     return 0
