@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-25",
+  "updated": "2026-10-29",
   "skills": {
     "ssh-deploy-skill": {
       "github": {
@@ -137,6 +137,13 @@
         "commit": "26d1700",
         "version": "0.7.1",
         "at": "2026-10-08"
+      }
+    },
+    "knowledge-desensitization-skill": {
+      "github": {
+        "commit": "affa538",
+        "version": "1.0.0",
+        "at": "2026-10-29"
       }
     }
   }

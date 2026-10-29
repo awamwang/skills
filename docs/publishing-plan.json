@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-25",
+  "updated": "2026-10-29",
   "platforms": {
     "github": {
       "name": "GitHub（基础层）",
@@ -1089,6 +1089,22 @@
         "skillssh": "skip"
       },
       "notes": "2026-10-25 本机扫描纳入；索引 README 已有 → github 记为已发布，其余平台暂定 skip。本地映射已写入 repos.json"
+    },
+    "knowledge-desensitization-skill": {
+      "tier": "t1",
+      "repo": "awam-skills/knowledge-desensitization-skill",
+      "summary": "本地知识库脱敏副本：扫描密钥与 PII、稳定占位符、凭据进 Bitwarden、恢复件离线备份",
+      "plan": {
+        "github": "publish",
+        "lobehub": "publish",
+        "modelscope": "publish",
+        "doubao": "publish",
+        "clawhub": "optional",
+        "agentpowers": "optional",
+        "skillssh": "publish"
+      },
+      "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "not_started", "agentpowers": "not_started", "skillssh": "not_started" },
+      "notes": "分类 security；本次仅发 GitHub，第三方平台暂缓。本地 G:/Knowledge/knowledge-desensitization"
     }
   }
 }

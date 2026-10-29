@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-25 00:00
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-29 00:00
 
 ## 平台
 
@@ -68,6 +68,7 @@
 | `windows-clean-skill` | 需改造 | — | — | — | — | — | — | — |
 | `windows-view-mode-skill` | 需改造 | — | — | — | — | — | — | — |
 | `ximalaya-downloader-skill` | 需改造 | ✅ | — | — | — | — | — | — |
+| `knowledge-desensitization-skill` | 最值得 | ✅ | ○ | ○ | ○ | ○ | ○ | ○ |
 
 ## 明细
 
@@ -742,4 +743,20 @@
 | ClawHub | 不建议 | — 不建议 |
 | AgentPowers | 不建议 | — 不建议 |
 | skills.sh | 不建议 | — 不建议 |
+
+### knowledge-desensitization-skill · 最值得
+
+- 仓库：`awam-skills/knowledge-desensitization-skill`
+- 简介：本地知识库脱敏副本：扫描密钥与 PII、稳定占位符、凭据进 Bitwarden、恢复件离线备份
+- 规划：分类 security；本次仅发 GitHub，第三方平台暂缓。本地 G:/Knowledge/knowledge-desensitization
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ✅ 已发布 |
+| LobeHub | 推荐发布 | ○ 未发布 |
+| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
+| 豆包技能中心 | 推荐发布 | ○ 未发布 |
+| ClawHub | 可选 / 需微调 | ○ 未发布 |
+| AgentPowers | 可选 / 需微调 | ○ 未发布 |
+| skills.sh | 推荐发布 | ○ 未发布 |
 
