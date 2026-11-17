@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-29",
+  "updated": "2026-11-06",
   "platforms": {
     "github": {
       "name": "GitHub（基础层）",
@@ -1105,6 +1105,38 @@
       },
       "status": { "github": "done", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "not_started", "agentpowers": "not_started", "skillssh": "not_started" },
       "notes": "分类 security；本次仅发 GitHub，第三方平台暂缓。本地 G:/Knowledge/knowledge-desensitization"
+    },
+    "lets-go-skill": {
+      "tier": "t1",
+      "repo": "awam-skills/lets-go-skill",
+      "summary": "带新手认识一个技能、MCP 或命令行工具：只读摸清用途，给出原理图和功能概述，并用无副作用的小演示带上手",
+      "plan": { "github": "publish", "lobehub": "publish", "modelscope": "publish", "doubao": "publish", "clawhub": "optional", "agentpowers": "optional", "skillssh": "publish" },
+      "status": { "github": "not_started", "lobehub": "not_started", "modelscope": "not_started", "doubao": "not_started", "clawhub": "not_started", "agentpowers": "not_started", "skillssh": "not_started" },
+      "notes": "2026-11-06 创建。本地 G:/Projects/19AI/skills/lets-go。空仓已建，内容未 push"
+    },
+    "awam-file": {
+      "tier": "t3",
+      "repo": "awamwang/awam-file",
+      "summary": "统一 awam:// 资源网关（MCP + 本机 HTTP）：本地盘、Everything 搜索、rclone 网盘、Logseq 知识库、qBittorrent 下载等经同一 API 供 Sigma / 文件管理器 / AI 访问",
+      "plan": {
+        "github": "publish",
+        "lobehub": "skip",
+        "modelscope": "skip",
+        "doubao": "skip",
+        "clawhub": "skip",
+        "agentpowers": "skip",
+        "skillssh": "skip"
+      },
+      "status": {
+        "github": "done",
+        "lobehub": "skip",
+        "modelscope": "skip",
+        "doubao": "skip",
+        "clawhub": "skip",
+        "agentpowers": "skip",
+        "skillssh": "skip"
+      },
+      "notes": "2026-11-17 已公开至个人仓 awamwang/awam-file。高度依赖本机资源（本地盘/Everything/rclone/qBittorrent），仅 GitHub 发布，第三方平台一律 skip。已接入发布前隐私体检 CI。本地 G:/Projects/19AI/skills/awam-file"
     }
   }
 }

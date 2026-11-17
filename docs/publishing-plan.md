@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-10-29 00:00
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-11-06 00:00
 
 ## 平台
 
@@ -69,6 +69,8 @@
 | `windows-view-mode-skill` | 需改造 | — | — | — | — | — | — | — |
 | `ximalaya-downloader-skill` | 需改造 | ✅ | — | — | — | — | — | — |
 | `knowledge-desensitization-skill` | 最值得 | ✅ | ○ | ○ | ○ | ○ | ○ | ○ |
+| `lets-go-skill` | 最值得 | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| `awam-file` | 需改造 | ✅ | — | — | — | — | — | — |
 
 ## 明细
 
@@ -759,4 +761,36 @@
 | ClawHub | 可选 / 需微调 | ○ 未发布 |
 | AgentPowers | 可选 / 需微调 | ○ 未发布 |
 | skills.sh | 推荐发布 | ○ 未发布 |
+
+### lets-go-skill · 最值得
+
+- 仓库：`awam-skills/lets-go-skill`
+- 简介：带新手认识一个技能、MCP 或命令行工具：只读摸清用途，给出原理图和功能概述，并用无副作用的小演示带上手
+- 规划：2026-11-06 创建。本地 G:/Projects/19AI/skills/lets-go。空仓已建，内容未 push
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ○ 未发布 |
+| LobeHub | 推荐发布 | ○ 未发布 |
+| 魔搭 ModelScope | 推荐发布 | ○ 未发布 |
+| 豆包技能中心 | 推荐发布 | ○ 未发布 |
+| ClawHub | 可选 / 需微调 | ○ 未发布 |
+| AgentPowers | 可选 / 需微调 | ○ 未发布 |
+| skills.sh | 推荐发布 | ○ 未发布 |
+
+### awam-file · 需改造
+
+- 仓库：`awamwang/awam-file`
+- 简介：统一 awam:// 资源网关（MCP + 本机 HTTP）：本地盘、Everything 搜索、rclone 网盘、Logseq 知识库、qBittorrent 下载等经同一 API 供 Sigma / 文件管理器 / AI 访问
+- 规划：2026-11-17 已公开至个人仓 awamwang/awam-file。高度依赖本机资源（本地盘/Everything/rclone/qBittorrent），仅 GitHub 发布，第三方平台一律 skip。已接入发布前隐私体检 CI。本地 G:/Projects/19AI/skills/awam-file
+
+| 平台 | 规划 | 实际 |
+|------|:----:|:----:|
+| GitHub（基础层） | 推荐发布 | ✅ 已发布 |
+| LobeHub | 不建议 | — 不建议 |
+| 魔搭 ModelScope | 不建议 | — 不建议 |
+| 豆包技能中心 | 不建议 | — 不建议 |
+| ClawHub | 不建议 | — 不建议 |
+| AgentPowers | 不建议 | — 不建议 |
+| skills.sh | 不建议 | — 不建议 |
 

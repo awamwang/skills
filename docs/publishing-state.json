@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-29",
+  "updated": "2026-11-03",
   "skills": {
     "ssh-deploy-skill": {
       "github": {
@@ -72,36 +72,31 @@
     },
     "quicker-connector": {
       "github": {
-        "commit": "6b414be",
-        "version": "1.5.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "1dc7e9f",
+        "version": "1.6.0",
+        "at": "2026-11-03"
       },
       "modelscope": {
-        "commit": "6b414be",
-        "version": "1.5.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "1dc7e9f",
+        "version": "1.6.0",
+        "at": "2026-11-03"
       },
       "clawhub": {
-        "commit": "6b414be",
-        "version": "1.5.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "1dc7e9f",
+        "version": "1.6.0",
+        "at": "2026-11-03"
       },
       "skillssh": {
-        "commit": "6b414be",
-        "version": "1.5.0",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "1dc7e9f",
+        "version": "1.6.0",
+        "at": "2026-11-03"
       }
     },
     "awam-windows-backup-skill": {
       "github": {
-        "commit": "e8f8042",
-        "version": "0.0.2",
-        "at": "2026-10-08",
-        "baseline": true
+        "commit": "4bc5dcb",
+        "version": "0.0.3",
+        "at": "2026-11-03"
       }
     },
     "wiz-migration": {
@@ -114,29 +109,29 @@
     },
     "awam-todo-skill": {
       "github": {
-        "commit": "26d1700",
-        "version": "0.7.1",
-        "at": "2026-10-08"
+        "commit": "1b80acd",
+        "version": "0.7.2",
+        "at": "2026-11-03"
       },
       "lobehub": {
-        "commit": "26d1700",
-        "version": "0.7.1",
-        "at": "2026-10-08"
+        "commit": "1b80acd",
+        "version": "0.7.2",
+        "at": "2026-11-03"
       },
       "modelscope": {
-        "commit": "26d1700",
-        "version": "0.7.1",
-        "at": "2026-10-08"
+        "commit": "1b80acd",
+        "version": "0.7.2",
+        "at": "2026-11-03"
       },
       "clawhub": {
-        "commit": "26d1700",
-        "version": "0.7.1",
-        "at": "2026-10-08"
+        "commit": "1b80acd",
+        "version": "0.7.2",
+        "at": "2026-11-03"
       },
       "skillssh": {
-        "commit": "26d1700",
-        "version": "0.7.1",
-        "at": "2026-10-08"
+        "commit": "1b80acd",
+        "version": "0.7.2",
+        "at": "2026-11-03"
       }
     },
     "knowledge-desensitization-skill": {
@@ -144,6 +139,20 @@
         "commit": "affa538",
         "version": "1.0.0",
         "at": "2026-10-29"
+      }
+    },
+    "windows-autostart-skill": {
+      "github": {
+        "commit": "84ec854",
+        "version": "0.5.0",
+        "at": "2026-11-03"
+      }
+    },
+    "ximalaya-downloader-skill": {
+      "github": {
+        "commit": "c62ede2",
+        "version": "0.0.1",
+        "at": "2026-11-03"
       }
     }
   }

@@ -5,6 +5,9 @@
 - 技能已在 LobeHub 网页「提交仓库」并 claim（CLI 无法代做）
 - 本机已 `npx @lobehub/market-cli@0.0.41` 登录，token 在
   `~/.lobehub-market/user-credentials.json` 的 accessToken
+- accessToken 过期（7 天）时自动用同文件里的 refreshToken 调
+  `POST {baseUrl}/lobehub-oidc/token` 续期并回写（与 market-cli
+  getValidUserToken 同款，refreshToken 会轮换）——无需每 7 天重新浏览器登录
 
 实测（2026-10-08，awam-todo 0.7.1）：
 - market-cli `skill publish` 会带错误 Content-Type → Failed to parse form data
@@ -20,11 +23,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
+import urllib.request
 import zipfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -42,6 +49,9 @@ CRED_CANDIDATES = (
     Path.home() / ".lobehub-market" / "user-credentials.json",
     Path.home() / ".lobehub" / "credentials.json",
 )
+OIDC_TOKEN_PATH = "/lobehub-oidc/token"
+OIDC_CLIENT_ID = "lobehub-cli"
+LOGIN_HINT = "npx -y @lobehub/market-cli@0.0.41 login"
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -62,6 +72,65 @@ def cleanup_tmp(keep: bool = False) -> None:
     _TMP_DIRS.clear()
 
 
+def _save_credentials(path: Path, data: dict) -> None:
+    text = json.dumps(data, ensure_ascii=False, indent=2)
+    fd = os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(text)
+
+
+def _post_refresh(base_url: str, refresh_token: str) -> dict:
+    """POST /lobehub-oidc/token（grant_type=refresh_token），与 market-cli getValidUserToken 同款。"""
+    body = urllib.parse.urlencode({
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": OIDC_CLIENT_ID,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        base_url.rstrip("/") + OIDC_TOKEN_PATH,
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def ensure_fresh_token(cred_path: Path, data: dict) -> str:
+    """accessToken 过期（含 60s 余量）时用 refreshToken 换新并回写凭据文件。"""
+    token = str(data.get("accessToken") or data.get("access_token") or data.get("token") or "")
+    expires_at = str(data.get("expiresAt") or "")
+    if token:
+        if not expires_at:
+            return token  # 旧格式无过期时间，沿用
+        try:
+            exp = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        except ValueError:
+            return token
+        if (exp - datetime.now(timezone.utc)).total_seconds() > 60:
+            return token
+    refresh_token = str(data.get("refreshToken") or data.get("refresh_token") or "")
+    if not refresh_token:
+        raise SystemExit(f"accessToken 已过期且无 refreshToken。请重新登录：\n  {LOGIN_HINT}")
+    base_url = str(data.get("baseUrl") or "https://market.lobehub.com")
+    try:
+        payload = _post_refresh(base_url, refresh_token)
+    except Exception as exc:  # noqa: BLE001
+        raise SystemExit(f"accessToken 刷新失败（{exc}）。请重新登录：\n  {LOGIN_HINT}")
+    new_token = payload.get("access_token")
+    if not new_token:
+        raise SystemExit(f"刷新响应缺少 access_token。请重新登录：\n  {LOGIN_HINT}")
+    data["accessToken"] = new_token
+    if payload.get("refresh_token"):
+        data["refreshToken"] = payload["refresh_token"]  # refreshToken 会轮换，落新弃旧
+    if payload.get("expires_in"):
+        exp_new = datetime.now(timezone.utc) + timedelta(seconds=float(payload["expires_in"]))
+        data["expiresAt"] = exp_new.isoformat().replace("+00:00", "Z")
+    _save_credentials(cred_path, data)
+    runutil.log("  accessToken 已过期 → 用 refreshToken 自动续期并回写凭据文件")
+    return new_token
+
+
 def load_token() -> tuple[str, Path]:
     for p in CRED_CANDIDATES:
         if not p.is_file():
@@ -70,12 +139,14 @@ def load_token() -> tuple[str, Path]:
             data = json.loads(p.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        if not isinstance(data, dict):
+            continue
         token = data.get("accessToken") or data.get("access_token") or data.get("token")
         if token:
-            return token, p
+            return ensure_fresh_token(p, data), p
     raise SystemExit(
         "未找到 LobeHub accessToken。请先：\n"
-        "  npx -y @lobehub/market-cli@0.0.41 github connect\n"
+        f"  {LOGIN_HINT}\n"
         f"凭据应落在：{CRED_CANDIDATES[0]}"
     )
 

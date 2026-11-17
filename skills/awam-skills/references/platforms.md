@@ -136,6 +136,14 @@ python skills/awam-skills/scripts/publish_lobehub.py --dir <技能仓>
 脚本用 curl multipart + 浏览器 UA 直传（绕过 market-cli Content-Type 坑与 Cloudflare 1010），
 成功后写规划 / state。凭据读 `~/.lobehub-market/user-credentials.json` 的 `accessToken`。
 
+> **Token 自动续期（2026-11-03 起）**：LobeHub market **没有静态 API Key**。user 登录的 accessToken
+> 仅 7 天有效，但同文件里的 `refreshToken` 长期有效且每次续期轮换。`publish_lobehub.py` 已内置
+> market-cli 同款续期（过期时 `POST {baseUrl}/lobehub-oidc/token`，form：`grant_type=refresh_token`
+> + `client_id=lobehub-cli`，新 token 与轮换后的 refreshToken 回写凭据文件）——一次浏览器登录后
+> 无需再手动重登。CLI 另有 M2M 凭据（`lhm register`，clientId/clientSecret），但 `skill publish`
+> 强制走 user 身份（须拥有技能），M2M 不能用于发布。续期彻底失效（refreshToken 被吊销）时按提示
+> 重跑 `npx -y @lobehub/market-cli@0.0.41 login`。
+
 1. **前置：网页提交仓库（必须，CLI 无法代做）。** 技能仓库公开后，用户打开 LobeHub 创作者主页（官方指引 `lobehub.com/zh/docs/usage/community/become-a-creator`）→「技能」区域 →「提交仓库」→ 选择该 GitHub 仓库。提交后技能进入 marketplace，CLI 才能认领。
 2. 连接 GitHub：`npx -y @lobehub/market-cli@0.0.41 github connect`；`github status` 应显示 `✓ GitHub connected`。
 3. 认领：`npx -y @lobehub/market-cli@0.0.41 skill claim <owner-repo>`。已拥有时返回 "You already own this skill"（正常，跳过即可）。
