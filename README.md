@@ -42,7 +42,7 @@
 
 | 技能 | 简介 |
 |------|------|
-| [knowledge-desensitization-skill](https://github.com/awam-skills/knowledge-desensitization-skill) | 把本地知识库（Logseq / Obsidian / 为知笔记 / 纯 Markdown）做成「可对外分享的脱敏副本」，并把抽出的凭据沉淀进 Bitwarden、把关键恢复件做离线备份。四层召回（字面量→厂商格式→关键词→熵兜底）识别密钥与… |
+| [knowledge-desensitization-skill](https://github.com/awam-skills/knowledge-desensitization-skill) | 把本地知识库做成可对外分享的脱敏副本：扫描密钥与 PII、稳定占位符、凭据进 Bitwarden、恢复件离线备份 |
 
 ### 影音图像
 
