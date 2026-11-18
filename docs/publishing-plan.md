@@ -1,6 +1,6 @@
 # 技能发布规划
 
-> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-11-06 00:00
+> 权威数据：[publishing-plan.json](publishing-plan.json) · 视图由 `skills/awam-skills/scripts/plan_skills.py` 生成，请勿手改本文件 · 更新：2026-11-18 00:00
 
 ## 平台
 
@@ -43,7 +43,7 @@
 | `stock-code-list-skill` | 需改造 | — | — | — | — | — | — | — |
 | `awam-tax-skill` | 需改造 | — | — | — | — | — | — | — |
 | `awam-tencent-cloud-skill` | 需改造 | — | — | — | — | — | — | — |
-| `awam-tool-manager-skill` | 需改造 | — | — | — | — | — | — | — |
+| `awam-tool-manager-skill` | 需改造 | ✅ | — | — | — | — | — | — |
 | `html-anim-video-maker-skill` | 需改造 | — | — | — | — | — | — | — |
 | `html-ppt-maker-skill` | 需改造 | — | — | — | — | — | — | — |
 | `material-collector-skill` | 需改造 | — | — | — | — | — | — | — |
@@ -348,13 +348,13 @@
 
 ### awam-tool-manager-skill · 需改造
 
-- 仓库：`awam-skills/awam-tool-manager-skill`
+- 仓库：`awamwang/awam-tool-manager`
 - 简介：统一工具管理器，维护本机工具名单，提供统一的工具注册、搜索、启动能力。作为 MCP Server 暴露给 AI 客户端，支持搜索工具、列出工具、启动工具、路由调用后端 MCP、管理后端进程等。调用入参：目标工具一律用 `tool_id…
-- 规划：2026-10-25 本机扫描纳入管理；发布安排暂定全 skip（尚未真实发布）。本地 awam-tool-manager
+- 规划：2026-11-18 已公开至个人仓 awamwang/awam-tool-manager（本地 HEAD 与线上 master 一致 3d55cb9）。本机工具名单统一入口（MCP Server），高度依赖本机环境，仅 GitHub 发布，第三方平台一律 skip。本地 G:/Projects/19AI/skills/awam-tool-manager
 
 | 平台 | 规划 | 实际 |
 |------|:----:|:----:|
-| GitHub（基础层） | 不建议 | — 不建议 |
+| GitHub（基础层） | 推荐发布 | ✅ 已发布 |
 | LobeHub | 不建议 | — 不建议 |
 | 魔搭 ModelScope | 不建议 | — 不建议 |
 | 豆包技能中心 | 不建议 | — 不建议 |
