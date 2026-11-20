@@ -61,7 +61,7 @@
 
 | 技能 | 简介 |
 |------|------|
-| [lets-go-skill](https://github.com/awam-skills/lets-go-skill) | 带新手认识一个技能、MCP 或命令行工具：只读摸清用途，给出原理图和功能概述，并用无副作用的小演示带上手。 |
+| [lets-go-skill](https://github.com/awam-skills/lets-go-skill) | 带会对话、但不熟 Skill 点名与确认边界的人认识一个技能、MCP 或命令行工具： 先两步课前段落实点名与推进话术，再只读摸清目标，用白话小演示看见一次输入输出。 在用户说带我上手、教我用、lets-go，或点名某个技能、MCP、工具要入门时使用。 |
 | [letsencrypt-windows-skill](https://github.com/awam-skills/letsencrypt-windows-skill) | Issue, renew, and maintain Let's Encrypt TLS certificates on Windows via ACME. Routes among win-acme, Posh-ACME, and Certify The Web; covers HTTP-01/DNS-01,… |
 | [stock-hots-skill](https://github.com/awam-skills/stock-hots-skill) | 获取并聚合多平台热门股票榜单（东方财富/同花顺/通达信/淘股吧/财联社/开盘啦/雪球/大智慧），输出综合前十与各平台 TOP-N。用户要热门股票、热榜排行、多平台榜单对比或榜单数据汇总时使用。 |
 | [windows-autostart-skill](https://github.com/awam-skills/windows-autostart-skill) | Create, inspect, and remove current-user Windows logon/scheduled startup entries through the repo's windows-autostart.ps1 CLI (JSON output). |
